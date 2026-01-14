@@ -14,7 +14,8 @@
 {-# LANGUAGE DeriveAnyClass        #-}
 {-# LANGUAGE StandaloneDeriving    #-}
 
--- {-# LANGUAGE UndecidableSuperClasses #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Data.Array.Accelerate.Tabular (
   Table
@@ -23,14 +24,19 @@ module Data.Array.Accelerate.Tabular (
 , Project (..)
 , Join (..)
 , Convert (..)
+, Index (..)
 , IsIndex (..)
+, type (:.:)
 ) where
 
 import Data.Array.Accelerate
+import Data.Array.Accelerate.Data.HashMap (HashMap, Hashable)
+import qualified Data.Array.Accelerate.Data.HashMap as H
 
 import Data.Array.Accelerate.Data.Maybe
 import Data.Array.Accelerate.Data.Functor
 import qualified Prelude as P
+import Data.Kind
 
 newtype Table rep key val = Table (TableR rep key val)
   deriving Generic
@@ -74,6 +80,20 @@ data CSR
 
 instance (Shape key, Elt val) => Rep CSR (key :. Int) val where
   type TableR CSR (key :. Int) val = (Scalar (key :. Int), Vector Int, Vector (key, val))
+
+data Hash
+
+instance (Hashable key, Elt val) => Rep Hash key val where
+  type TableR Hash key val = HashMap key val
+
+data Segmented
+
+instance (Shape key, Elt val) => Rep Segmented key val where
+  type TableR Segmented key val = (Scalar key, Segments key, Vector val)
+
+data BitflagSegmented
+
+-- instance 
 
 csrToDense :: (Shape key, Elt val)
            => Acc (Table CSR   (key :. Int) val)
@@ -161,6 +181,9 @@ instance (Shape key, Elt val) => Project CSR (key :. Int) val where
     let dat' = map (\(T2 i v) -> T2 i (f v)) dat
     in  Table_ (T3 sh seg dat')
 
+instance (Hashable key, Elt val) => Project Hash key val where
+  project f (Table_ tab) = Table_ (H.map f tab)
+
 ------------------------------------------------------
 
 class (Rep rep key val, Rep rep key val') => Join rep key val val' where
@@ -190,6 +213,24 @@ instance (Shape key, Elt val) => Convert Dense Complete key val where
 
 ---------------------------
 
+class Rep rep key val => Index rep key val where
+  index :: Acc (Table rep key val) -> Exp key -> Exp (Maybe val)
+  unsafeIndex :: Acc (Table rep key val) -> Exp key -> Exp val
+
+instance (Shape key, Elt val) => Index Complete key val where
+  unsafeIndex (Table_ tab) = (tab !)
+  index tab = Just_ . unsafeIndex tab
+
+instance (Shape key, Elt val) => Index Dense key val where
+  index (Table_ tab) = (tab !)
+  unsafeIndex tab = fromJust . index tab
+
+instance (Eq key, Hashable key, Elt val) => Index Hash key val where
+  index (Table_ tab) = (`H.lookup` tab)
+  unsafeIndex tab = fromJust . index tab
+
+-------------------------------
+
 class (Elt key, Shape sh) => IsIndex key sh where
   toShape :: key -> sh
 
@@ -203,7 +244,71 @@ instance (IsIndex key sh, Elt key', P.Enum key') => IsIndex (key, key') (sh :. I
   toShape (x, y) = toShape x :. P.fromEnum y
 
 
+----------------------------------------------------------------------------
 
--- type family (a ++ b) where
---   (a ++ Z) = a
---   (a ++ (b :. Int)) = ((a :. Int) ++ b)
+-- class Arrays (TableR' rep key val) => Rep' rep key val where
+--   type TableR' rep key val
+
+-- data Dense' key
+-- data Compressed' key
+
+data r :.: r'
+
+-- instance Rep' Z where
+--   type TableR' Z val = Vector val
+
+-- instance (Rep' rep, Shape key) => Rep' (rep :.: Dense' key) where
+--   type TableR' (rep :.: Dense' key) val = (Scalar key, Table' rep val)
+
+-- instance (Rep' rep, Shape key) => Rep' (rep :.: Compressed' key) where
+--   type TableR' (rep :.: Compressed' key) val = (Table' rep val)
+
+-- newtype Table' rep val = Table' (TableR' rep val)
+--   deriving Generic
+
+-- deriving instance Arrays (TableR' rep val) => Arrays (Table' rep val)
+
+-- {-# COMPLETE Table'_ #-}
+-- pattern Table'_ :: Arrays (TableR' rep val)
+--                => Acc (TableR' rep val)
+--                -> Acc (Table'  rep val)
+-- pattern Table'_ tab = Pattern tab
+
+-- class Rep' rep => Project' rep val where
+--   project' :: (Elt val, Elt val')
+--            => (Exp val -> Exp val')
+--            -> Acc (Table' rep val)
+--            -> Acc (Table' rep val')
+
+-- instance (Elt val) => Project' Z val where
+--   project' f (Table'_ tab) = Table'_ (map f tab)
+
+-- instance (Shape key, Project' rep val) => Project' (rep :.: Dense' key) val where
+--   project' f (Table'_ _) = undefined
+
+instance (Shape key, Elt val) => Rep Z key val where
+  type TableR Z key val = Vector val
+
+instance (Shape key, Rep rep key val) => Rep (rep :.: Dense) key val where
+  type TableR (rep :.: Dense) key val = (Scalar Int, Table rep key val)
+
+data Compressed
+
+instance (Shape key, Rep rep key val) => Rep (rep :.: Compressed) key val where
+  type TableR (rep :.: Compressed) key val = (Segments DIM1, Vector Int, Table rep key val)
+  
+instance (Elt val, Elt val') => Project' Z Z val val' where
+  project' f (Table_ tab) = Table_ (map f tab)
+
+class (Rep rep key val, Rep rep key val') => Project' rep key val val' where
+  project' :: (Exp val -> Exp val') -> Acc (Table rep key val) -> Acc (Table rep key val')
+  iproject' :: (Exp key -> Exp val -> Exp val') -> Acc (Table rep key val) -> Acc (Table rep key val')
+
+
+
+instance (Shape key, Project' rep key val val') =>
+  Project' (rep :.: Dense) key val val' where
+  project' f (Table_ (T2 s inner)) = Table_ $ T2 s (project' f inner)
+
+instance (Shape key, Project' rep key val val') => Project' (rep :.: Compressed) key val val' where
+  project' f (Table_ (T3 seg pos inner)) = Table_ $ T3 seg pos (project' f inner)
