@@ -1,4 +1,5 @@
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Main (main) where
 
@@ -10,9 +11,11 @@ import qualified Prelude
 
 main :: Prelude.IO ()
 main = do
-  let tab = project (chr . subtract 32 . ord) testTable2
+  let tab = project (chr . subtract 32 . ord) testTable3
   -- let val = unsafeIndex' 0 tab (Z_ ::.: 1 ::.: 12)
-  Prelude.print (run $ enumKeys tab)
+  Prelude.putStrLn $ test @UniformScheduleFun @NativeKernel (enumKeys $ meta_ tab)
+  Prelude.print (run tab)
+  Prelude.print $ run (enumKeys $ meta_ tab)
+
   -- let xs = map (+1) $ generate (I1 100) (\(I1 i) -> i * 3 + 1)
-  Prelude.putStrLn $ test @UniformScheduleFun @NativeKernel (enumKeys tab)
   -- Prelude.putStrLn $ Prelude.show $ run xs
