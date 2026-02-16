@@ -26,17 +26,6 @@ packages:
   original:
     hackage: MIP-0.2.0.0
 - completed:
-    name: llvm-pretty
-    pantry-tree:
-      sha256: ded33ca4fadd49002b46d78149966dbe97c14ba362c33f51283b9c1f8b13514f
-      size: 1822
-    sha256: 6097df403e43d257683bf3e005c2f2ffb2d8dd0cc6e19e9eb5994d9b0953c1b9
-    size: 64744
-    url: https://github.com/tomsmeding/llvm-pretty/archive/a253a7fc1c62f4825ffce6b2507eebc5dadff32c.tar.gz
-    version: 0.13.0.0.99
-  original:
-    url: https://github.com/tomsmeding/llvm-pretty/archive/a253a7fc1c62f4825ffce6b2507eebc5dadff32c.tar.gz
-- completed:
     hackage: monadLib-3.10.3@sha256:026ba169762e63f0fe5f5c78829808f522a28730043bc3ad9b7c146baedf709f,637
     pantry-tree:
       sha256: da85680ad661e0c7ad4de37437ddbfb029c789ada8f856f6abce0465f6836830
