@@ -1,6 +1,6 @@
 cabal-version: 2.2
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.38.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -25,7 +25,20 @@ source-repository head
 
 library
   exposed-modules:
-      Lib
+      Data.Array.Accelerate.Tabular
+      Data.Array.Accelerate.Tabular.Classes.Index
+      Data.Array.Accelerate.Tabular.Classes.IndexKey
+      Data.Array.Accelerate.Tabular.Classes.Rep
+      Data.Array.Accelerate.Tabular.Prelude
+      Data.Array.Accelerate.Tabular.Rep
+      Data.Array.Accelerate.Tabular.Rep.Compressed
+      Data.Array.Accelerate.Tabular.Rep.Dense
+      Data.Array.Accelerate.Tabular.Rep.Hashed
+      Data.Array.Accelerate.Tabular.Rep.Offset
+      Data.Array.Accelerate.Tabular.Rep.Range
+      Data.Array.Accelerate.Tabular.Rep.Singleton
+      Data.Array.Accelerate.Tabular.Rep.Snoc
+      Data.Array.Accelerate.Tabular.Util
   other-modules:
       Paths_accelerate_tabular
   autogen-modules:
