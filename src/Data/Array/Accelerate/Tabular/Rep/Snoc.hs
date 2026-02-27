@@ -18,6 +18,7 @@ module Data.Array.Accelerate.Tabular.Rep.Snoc (
 ) where
 
 import Prelude ( Show (..), showString )
+import qualified Prelude as P
 
 import Data.Array.Accelerate
 import Data.Array.Accelerate.Data.Semigroup
@@ -25,9 +26,11 @@ import Data.Array.Accelerate.Data.Semigroup
 -- | Increase an index or representation rank by one dimension.
 -- The ':.:' operator is used to construct both values and types.
 --
+-- In an 'Acc' context, the pattern '(::.:)' can be used instead.
+--
 infixl 3 :.:
 data tail :.: head = tail :.: head
-  deriving (Generic)
+  deriving (Generic, P.Eq, P.Ord)
 
 instance (Elt tail, Elt head) => Elt (head :.: tail)
 
@@ -36,3 +39,9 @@ instance (Show tail, Show head) => Show (tail :.: head) where
     showsPrec p t . showString " :.: " . showsPrec p h
 
 mkPattern ''(:.:)
+
+instance (Eq tail, Eq head) => Eq (tail :.: head) where
+  (t1 ::.: h1) == (t2 ::.: h2) = (t1 == t2) && (h1 == h2)
+
+instance (Ord tail, Ord head) => Ord (tail :.: head) where
+  compare (t1 ::.: h1) (t2 ::.: h2) = compare t1 t2 <> compare h1 h2
