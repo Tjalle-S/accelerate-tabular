@@ -9,7 +9,6 @@
 
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE UndecidableInstances  #-}
 
 module Data.Array.Accelerate.Tabular.Rep.Compressed (
   Compressed

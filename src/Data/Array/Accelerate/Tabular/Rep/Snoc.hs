@@ -8,7 +8,6 @@
 
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE UndecidableInstances  #-}
 
 {-# LANGUAGE DeriveGeneric         #-}
 
