@@ -9,6 +9,8 @@
 
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Data.Array.Accelerate.Tabular.Rep.Dense (
   Dense
@@ -21,6 +23,9 @@ import Data.Array.Accelerate.Tabular.Classes.Rep
 import Data.Array.Accelerate.Tabular.Classes.Index
 import Data.Array.Accelerate.Tabular.Rep.Snoc
 import Data.Array.Accelerate.Tabular.Classes.IndexKey
+import Data.Array.Accelerate.Tabular.Util
+
+import Data.Function (on)
 
 -- | All keys on this level are present, and the associated values are 
 -- explicitly stored.
@@ -35,10 +40,27 @@ data Dense
 
 instance (Rep rep keys, IndexKey key) =>
   Rep (rep :.: Dense) (keys :.: key) where
-  
+
   type MetaR (rep :.: Dense) (keys :.: key) = (Meta rep keys, Scalar key)
 
   emptyMeta = DenseMeta emptyMeta (unit $ toKey 0)
+
+  createMeta ks = (DenseMeta met n, perm', flags' ++ fend)
+    where
+      (ks', is) = splitKeys ks
+
+      (met, perm, flags) = createMeta ks'
+      is' = gather perm is
+      (is'', perm') = unzip $
+        segmentedSortBy (compare `on` fst) flags (zip is' perm)
+
+      n = map (toKey . (+ 1)) (maximum $ map fromKey is)
+      fend = fill (I1 1) True_
+
+      flags' = stencil
+        (\(l, c, _) -> l /= c)
+        (function $ const (-1))
+        (map fromKey is'')
 
 instance (Index rep keys, IndexKey key) =>
   Index (rep :.: Dense) (keys :.: key) where

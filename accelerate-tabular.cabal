@@ -39,6 +39,7 @@ library
       Data.Array.Accelerate.Tabular.Rep.Singleton
       Data.Array.Accelerate.Tabular.Rep.Snoc
       Data.Array.Accelerate.Tabular.Util
+      Data.Array.Accelerate.Tabular.Util.SegmentedSort
   other-modules:
       Paths_accelerate_tabular
   autogen-modules:

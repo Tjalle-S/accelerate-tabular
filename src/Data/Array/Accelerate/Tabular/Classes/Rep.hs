@@ -30,6 +30,8 @@ class (Elt key, Arrays (MetaR rep key)) => Rep rep key where
   -- | Create metadata for an table storing no keys or values.
   emptyMeta :: Acc (Meta rep key)
 
+  createMeta :: Acc (Vector key) -> (Acc (Meta rep key), Acc (Vector Int), Acc (Vector Bool))
+
 newtype Meta rep key = Meta (MetaR rep key)
   deriving (Generic)
 
@@ -47,3 +49,12 @@ instance Rep Z Z where
   type MetaR Z Z = ()
 
   emptyMeta = Meta_ (lift ())
+
+  createMeta ks = (emptyMeta, perm, flags)
+    where
+      is         = fill (I1 1) 0 ++ fill (I1 1) (length ks)
+      emptyFlags = fill (I1 $ 1 + length ks) False_
+      fullFlags  = fill (I1 2) True_
+      flags      = scatter is emptyFlags fullFlags
+
+      perm = enumFromN (I1 $ length ks) 0
