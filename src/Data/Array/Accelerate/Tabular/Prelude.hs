@@ -15,7 +15,7 @@
 module Data.Array.Accelerate.Tabular.Prelude (
   Table (..)
 , pattern Table_, meta_, vals_
-, emptyTable
+, emptyTable, createTable
 ) where
 
 import Data.Array.Accelerate
@@ -24,6 +24,8 @@ import Data.Array.Accelerate.Data.Functor
 
 import Data.Array.Accelerate.Tabular.Classes.Rep
 import Data.Array.Accelerate.Tabular.Classes.Index
+import Control.DeepSeq (NFData)
+import Data.Array.Accelerate.Tabular.Rep.Snoc
 
 -- | A table, consisting of metadata and values.
 --
@@ -35,6 +37,9 @@ data Table rep key val = Table {
   --
 , vals :: Vector val
 } deriving (Generic)
+
+instance (NFData (Meta rep key), Elt val, NFData val) =>
+  NFData (Table rep key val)
 
 deriving instance (Show (Meta rep key), Elt val, Show val) =>
   Show (Table rep key val)
@@ -54,3 +59,10 @@ emptyTable = Table_ {
   meta_ = emptyMeta
 , vals_ = fill (I1 0) undef
 }
+
+createTable :: (Rep rep key, Elt val)
+            => Acc (Vector (key, val))
+            -> Acc (Table rep key val) 
+createTable kvs = let (ks, vs)       = unzip kvs
+                      (met, perm, _, _) = createMeta ks
+                  in  Table_ met (gather perm vs)

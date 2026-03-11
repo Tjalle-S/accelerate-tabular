@@ -17,11 +17,13 @@ module Data.Array.Accelerate.Tabular.Rep.Compressed (
 
 import Data.Array.Accelerate
 
+
 import Data.Array.Accelerate.Tabular.Classes.Rep
 import Data.Array.Accelerate.Tabular.Rep.Snoc
 import Data.Array.Accelerate.Tabular.Util
 
 import Data.Type.Equality
+import Data.Function (on)
 
 -- | Stores only keys present in the table, in a segmented vector.
 --
@@ -53,6 +55,26 @@ instance (Rep rep keys, Ord key) =>
 
   emptyMeta = emptyCompressed
 
+  createMeta ks =
+    let (ks', is) = splitKeys ks
+        (met, perm, flags, n) = createMeta ks'
+
+        is' = gather perm is
+        (is'', perm') = unzip $
+          segmentedSortBy (compare `on` fst) flags (zipChecked is' perm)
+
+        flags' = headFlagBorders flags is''
+        is''' = afst $ compact flags' is''
+
+        n' = unit (length is''')
+
+        -- is''' = uniqSegHead flags is''
+
+        -- seg' = scanl (+) 0 (map boolToInt flags)
+        seg' = undefined
+
+        met' = CompressedMeta met seg' is'''
+    in  (met', perm', flags', n')
 
 -- Local utilities for compressed representations.
 -- -----------------------------------------------
@@ -61,8 +83,8 @@ instance (Rep rep keys, Ord key) =>
 --
 type CompressedMetaR rep keys key = (Meta rep keys, Segments Int, Vector key)
 
-type IsCompressed rep r keys key = (
-    Rep rep keys
+type IsCompressed rep r keys key =
+  ( Rep rep keys
   , Elt key
   , MetaR (rep :.: r) (keys :.: key) ~ CompressedMetaR rep keys key
   )
@@ -72,7 +94,7 @@ pattern CompressedMeta :: (IsCompressed rep r keys key)
                        -> Acc (Segments Int)
                        -> Acc (Vector key)
                        -> Acc (Meta (rep :.: r) (keys :.: key))
-pattern CompressedMeta { met, seg, ks } = Meta_ (T3 met seg ks)
+pattern CompressedMeta { meta, seg, keys } = Meta_ (T3 meta seg keys)
 {-# COMPLETE CompressedMeta #-}
 
 -- | Creates empty metadata for compressed representations.

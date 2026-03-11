@@ -44,14 +44,14 @@ type State a =
   )
 
 step :: Elt a => (Exp a -> Exp a -> Exp Ordering) -> Acc (State a) -> Acc (State a)
-step cmp (T2 values headFlags) = (T2 values' headFlags')
+step cmp (T2 values headFlags) = T2 values' headFlags'
   where
     -- Per element, the pivot of the segment of that element
     -- For each segment, we just take the first element as pivot
     pivots = propagateSegmentHead headFlags values
 
     -- Find which elements are larger than the pivot
-    isLarger = zipWith (\v p -> cmp v p /= LT_) values pivots
+    isLarger = zipWithChecked (\v p -> cmp v p /= LT_) values pivots
 
     -- Propagate the start index of a segment to all elements
     startIndex = propagateSegmentHead headFlags (generate (shape values) unindex1)
@@ -67,7 +67,7 @@ step cmp (T2 values headFlags) = (T2 values' headFlags')
     countSmaller = map (+1) $ propagateSegmentLast headFlags indicesSmaller
 
     -- Compute the new indices of the elements
-    permutation = zipWith5 partitionPermuteIndex isLarger startIndex indicesSmaller indicesLarger countSmaller
+    permutation = zipWithChecked5 partitionPermuteIndex isLarger startIndex indicesSmaller indicesLarger countSmaller
 
     -- Perform the permutation
     values' = scatter permutation (fill (shape values) undef) values
@@ -135,7 +135,7 @@ propagateSegmentLast
 propagateSegmentLast headFlags values
   = map fst
   $ postscanr f (T2 undef True_)
-  $ zip values
+  $ zipChecked values
   $ tail headFlags
   where
     f (T2 leftValue leftFlag) right =

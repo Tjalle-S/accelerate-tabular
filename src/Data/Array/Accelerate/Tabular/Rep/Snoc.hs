@@ -10,6 +10,7 @@
 {-# LANGUAGE FlexibleInstances     #-}
 
 {-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 module Data.Array.Accelerate.Tabular.Rep.Snoc (
   type (:.:) (..)
@@ -23,6 +24,7 @@ import qualified Prelude as P
 
 import Data.Array.Accelerate
 import Data.Array.Accelerate.Data.Semigroup
+import Control.DeepSeq (NFData)
 
 -- | Increase an index or representation rank by one dimension.
 -- The ':.:' operator is used to construct both values and types.
@@ -31,7 +33,7 @@ import Data.Array.Accelerate.Data.Semigroup
 --
 infixl 3 :.:
 data tail :.: head = tail :.: head
-  deriving (Generic, P.Eq, P.Ord)
+  deriving (Generic, P.Eq, P.Ord, NFData)
 
 instance (Elt tail, Elt head) => Elt (head :.: tail)
 

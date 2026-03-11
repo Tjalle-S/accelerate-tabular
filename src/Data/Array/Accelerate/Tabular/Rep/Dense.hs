@@ -45,16 +45,16 @@ instance (Rep rep keys, IndexKey key) =>
 
   emptyMeta = DenseMeta emptyMeta (unit $ toKey 0)
 
-  createMeta ks = (DenseMeta met n, perm', flags' ++ fend)
+  createMeta ks = (DenseMeta met (map toKey n'), perm', flags' ++ fend, n')
     where
       (ks', is) = splitKeys ks
 
-      (met, perm, flags) = createMeta ks'
+      (met, perm, flags, n) = createMeta ks'
       is' = gather perm is
       (is'', perm') = unzip $
-        segmentedSortBy (compare `on` fst) flags (zip is' perm)
+        segmentedSortBy (compare `on` fst) flags (zipChecked is' perm)
 
-      n = map (toKey . (+ 1)) (maximum $ map fromKey is)
+      n' = zipWith (*) n $ map (+ 1) (maximum $ map fromKey is)
       fend = fill (I1 1) True_
 
       flags' = stencil
