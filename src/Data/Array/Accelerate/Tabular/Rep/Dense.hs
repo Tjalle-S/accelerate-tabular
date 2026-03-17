@@ -21,6 +21,7 @@ import Data.Array.Accelerate.Tabular.Classes.Rep
 import Data.Array.Accelerate.Tabular.Classes.Index
 import Data.Array.Accelerate.Tabular.Rep.Snoc
 import Data.Array.Accelerate.Tabular.Classes.IndexKey
+import Data.Array.Accelerate.Tabular.Util
 
 -- | All keys on this level are present, and the associated values are 
 -- explicitly stored.
@@ -36,9 +37,20 @@ data Dense
 instance (Rep rep keys, IndexKey key) =>
   Rep (rep :.: Dense) (keys :.: key) where
   
-  type MetaR (rep :.: Dense) (keys :.: key) = (Meta rep keys, Scalar key)
+  type MetaR (rep :.: Dense) (keys :.: key) = (Meta rep keys, Scalar Int)
 
   emptyMeta = DenseMeta emptyMeta (unit $ toKey 0)
+
+  createMeta ks =
+    let (ks', is)      = splitKeys ks
+        (met, perm, n) = createMeta ks'
+
+        n'   = 1 + fromKey (the $ maximum is)
+        met' = DenseMeta met (unit n')
+
+        perm' = zipWith (\(I1 p) i -> I1 $ toKey $ p * n' + fromKey i) perm is
+    in  (met', perm', n * n')
+
 
 instance (Index rep keys, IndexKey key) =>
   Index (rep :.: Dense) (keys :.: key) where
@@ -47,7 +59,7 @@ instance (Index rep keys, IndexKey key) =>
     fromKey (the n) * unsafeToLinearIndex met k + fromKey i
 
   toLinearIndex       DenseMeta { met, n } (k ::.: i) =
-    if i >= toKey 0 && i < the n
+    if i >= toKey 0 && fromKey i < the n
       then fmap (\i' -> fromKey (the n) * i' + fromKey i) (toLinearIndex met k)
       else Nothing_
 
@@ -56,7 +68,7 @@ instance (Index rep keys, IndexKey key) =>
 
 pattern DenseMeta :: (Arrays (Meta rep keys), Elt key)
               => Acc (Meta rep keys)
-              -> Acc (Scalar key)
+              -> Acc (Scalar Int)
               -> Acc (Meta (rep :.: Dense) (keys :.: key))
 pattern DenseMeta { met, n } = Meta_ (T2 met n)
 {-# COMPLETE DenseMeta #-}

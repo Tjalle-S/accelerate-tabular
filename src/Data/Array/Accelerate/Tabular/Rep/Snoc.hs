@@ -15,6 +15,7 @@ module Data.Array.Accelerate.Tabular.Rep.Snoc (
   type (:.:) (..)
 , type Z     (..)
 , pattern (::.:)
+, key, unKey
 ) where
 
 import Prelude ( Show (..), showString )
@@ -45,3 +46,9 @@ instance (Eq tail, Eq head) => Eq (tail :.: head) where
 
 instance (Ord tail, Ord head) => Ord (tail :.: head) where
   compare (t1 ::.: h1) (t2 ::.: h2) = compare t1 t2 <> compare h1 h2
+
+key :: (Elt keys, Elt key) => Exp keys -> Exp key -> Exp (keys :.: key)
+key = (::.:)
+
+unKey :: (Elt keys, Elt key) => Exp (keys :.: key) -> Exp (keys, key)
+unKey (ks ::.: k) = T2 ks k
