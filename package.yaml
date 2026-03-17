@@ -25,6 +25,7 @@ dependencies:
 - accelerate-llvm
 - accelerate-llvm-native
 - containers-accelerate
+- deepseq
 
 ghc-options:
 - -Wall
@@ -61,3 +62,17 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - accelerate-tabular
+
+benchmarks:
+  accelerate-tabular-bench:
+    main:                Main.hs
+    source-dirs:         bench
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - accelerate-tabular
+    - containers-accelerate
+    - criterion
+    - random

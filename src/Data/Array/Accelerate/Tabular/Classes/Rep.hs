@@ -19,6 +19,8 @@ module Data.Array.Accelerate.Tabular.Classes.Rep (
 
 import Data.Array.Accelerate
 
+import Control.DeepSeq (NFData)
+
 -- | Possible representations for tables with a given key type.
 --
 class (Elt key, Arrays (MetaR rep key)) => Rep rep key where
@@ -38,6 +40,7 @@ newtype Meta rep key = Meta (MetaR rep key)
 
 deriving instance Show   (MetaR rep key) => Show   (Meta rep key)
 instance          Arrays (MetaR rep key) => Arrays (Meta rep key)
+instance          NFData (MetaR rep key) => NFData (Meta rep key)
 
 {-# COMPLETE Meta_ #-}
 pattern Meta_ :: Arrays (MetaR rep key)
