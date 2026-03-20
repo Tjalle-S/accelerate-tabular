@@ -1,10 +1,12 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeOperators     #-}
 
 module Data.Array.Accelerate.Tabular.Util (
-  emptyVector, splitKeys,
-  rotateLeft, rotateRight
+  emptyVector, splitKeys
+, rotateLeft, rotateRight
+, fst3, snd3, thd3
+, comparing
 ) where
 
 import Data.Array.Accelerate
@@ -26,13 +28,13 @@ splitKeys = unzip . map unKey
 --
 -- >>> let vec = fromList (Z:.5) [1..] :: Vector Int
 -- >>> vec
--- Vector (Z :. 5) [1, 2, 3, 4, 5]
+-- Vector (Z :. 5) [1,2,3,4,5]
 --
 -- >>> run $ rotateLeft 1 (use vec)
--- Vector (Z :. 5) [2, 3, 4, 5, 1]
+-- Vector (Z :. 5) [2,3,4,5,1]
 --
 -- >>> run $ rotateLeft (-1) (use vec)
--- Vector (Z :. 5) [5, 1, 2, 3, 4]
+-- Vector (Z :. 5) [5,1,2,3,4]
 --
 rotateLeft :: (Elt a) => Exp Int -> Acc (Vector a) -> Acc (Vector a)
 rotateLeft r xs = backpermute
@@ -45,3 +47,35 @@ rotateLeft r xs = backpermute
 --
 rotateRight :: (Elt a) => Exp Int -> Acc (Vector a) -> Acc (Vector a)
 rotateRight r = rotateLeft (- r)
+
+
+-- | Extract the first element of a 3-tuple.
+--
+fst3 :: (Elt a, Elt b, Elt c) => Exp (a, b, c) -> Exp a
+fst3 (T3 x _ _) = x
+
+-- | Extract the second element of a 3-tuple.
+--
+snd3 :: (Elt a, Elt b, Elt c) => Exp (a, b, c) -> Exp b
+snd3 (T3 _ y _) = y
+
+-- | Extract the third element of a 3-tuple.
+--
+thd3 :: (Elt a, Elt b, Elt c) => Exp (a, b, c) -> Exp c
+thd3 (T3 _ _ z) = z
+
+
+-- |
+-- > comparing p x y = compare (p x) (p y)
+--
+-- Useful combinator for use in conjunction with the @xxxBy@ family
+-- of functions on containers, for example:
+--
+-- >   ... sortBy (comparing fst) ...
+--
+comparing :: (Ord a, Elt b)
+          => (Exp b -> Exp a)
+          -> Exp b
+          -> Exp b
+          -> Exp Ordering
+comparing p x y = compare (p x) (p y)

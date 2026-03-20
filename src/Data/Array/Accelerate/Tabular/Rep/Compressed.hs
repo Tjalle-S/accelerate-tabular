@@ -6,11 +6,10 @@
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE PatternSynonyms       #-}
 {-# LANGUAGE ConstraintKinds       #-}
-{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NamedFieldPuns        #-}
 
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
-{-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
 module Data.Array.Accelerate.Tabular.Rep.Compressed (
   Compressed
@@ -66,19 +65,23 @@ instance (Rep rep keys, Ord key) =>
           $ sortBy (comparing fst3 <> comparing snd3)
           $ zipChecked3 perm is (enumFromN (shape is) 0)
 
+        histo = histogram (I1 n) perm
+
         diff = stencil
-          (\(l, m, _) -> l == m)
+          (\(l, m, _) -> l /= m)
           (function $ const undef) -- Boundary does not matter.
           is'
-        flags = mkHeadFlags (shape is) (histogram (I1 n) perm)
-        flags' = zipWith (||) diff flags -- 1st element always true.
+        flags = mkHeadFlags (shape is) histo
+        flags' = zipWith (||) diff flags -- 1st element of segment always kept.
 
         T2 is'' n' = compact flags' is'
 
-        segSizes = foldSegHead (+) (zipWithChecked (T2 . boolToInt) diff flags)
+        segSizes = foldSeg (+) 0 (map boolToInt flags') histo
+
+        perm'' = map (I1 . subtract 1) (scanl1 (+) (map boolToInt flags'))
 
         met' = CompressedMeta met (scanl1 (+) segSizes) is''
-    in  (met', gather (map unindex1 perm) (map I1 perm'), the n')
+    in  (met', scatter perm' (fill (shape perm') undef) perm'', the n')
 
 
 -- Local utilities for compressed representations.
@@ -115,48 +118,9 @@ histogram n ids =
       ones  = fill (shape ids) 1
   in  permute' (+) zeros (map Just_ $ zipChecked ids ones)
 
-fst3 :: (Elt a, Elt b, Elt c) => Exp (a, b, c) -> Exp a
-fst3 (T3 x _ _) = x
-
-snd3 :: (Elt a, Elt b, Elt c) => Exp (a, b, c) -> Exp b
-snd3 (T3 _ y _) = y
-
-thd3 :: (Elt a, Elt b, Elt c) => Exp (a, b, c) -> Exp c
-thd3 (T3 _ _ z) = z
-
-comparing :: (Ord a, Elt b)
-          => (Exp b -> Exp a)
-          -> Exp b
-          -> Exp b
-          -> Exp Ordering
-comparing p x y = compare (p x) (p y)
-
 mkHeadFlags :: Exp DIM1 -> Acc (Segments Int) -> Acc (Vector Bool)
 mkHeadFlags n seg =
   let offset = map I1 $ prescanl (+) 0 seg
       falses = fill n False_
       trues  = fill (shape seg) True_
   in  permute' (||) falses (map Just_ $ zipChecked offset trues)
-
-scanlSegHead :: (Elt a)
-             => (Exp a -> Exp a -> Exp a)
-             -> Acc (Vector (a, Bool))
-             -> Acc (Vector a)
-scanlSegHead f = map fst . scanl1 (segmented f)
-
-segmented :: (Elt a)
-          => (Exp a -> Exp a -> Exp a)
-          -> Exp (a, Bool) -> Exp (a, Bool) -> Exp (a, Bool)
-segmented f (T2 x fx) (T2 y fy) =
-  let v' = fy ? (y, f x y)
-      f' = fx || fy
-  in T2 v' f'
-
-foldSegHead :: (Elt a)
-            => (Exp a -> Exp a -> Exp a)
-            -> Acc (Vector (a, Bool))
-            -> Acc (Vector a)
-foldSegHead f xs =
-  let xs'     = scanlSegHead f xs
-      (_, fs) = unzip xs
-  in  afst $ compact (rotateLeft 1 fs) xs'
