@@ -7,6 +7,7 @@ module Data.Array.Accelerate.Tabular.Util (
 , rotateLeft, rotateRight
 , fst3, snd3, thd3
 , comparing
+, histogram
 ) where
 
 import Data.Array.Accelerate
@@ -15,9 +16,12 @@ import Data.Array.Accelerate.Unsafe (undef)
 import Data.Array.Accelerate.Tabular.Rep.Snoc
 
 -- | Creates an empty (length-0) vector.
+--
 emptyVector :: (Elt e) => Acc (Vector e)
 emptyVector = fill (I1 0) undef
 
+-- | Split keys into keys for the parent and current levels.
+--
 splitKeys :: (Elt keys, Elt key)
           => Acc (Vector (keys :.: key))
           -> (Acc (Vector keys), Acc (Vector key))
@@ -79,3 +83,9 @@ comparing :: (Ord a, Elt b)
           -> Exp b
           -> Exp Ordering
 comparing p x y = compare (p x) (p y)
+
+histogram :: Exp DIM1 -> Acc (Vector DIM1) -> Acc (Vector Int)
+histogram n ids =
+  let zeros = fill n 0
+      ones  = fill (shape ids) 1
+  in  permute' (+) zeros (map Just_ $ zipChecked ids ones)

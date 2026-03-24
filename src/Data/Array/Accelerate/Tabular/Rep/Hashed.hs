@@ -52,10 +52,13 @@ instance (Rep rep keys, Eq key, Hashable key) =>
 
   createMeta ks =
     let
-      w = 10 -- ?
-
       (ks', is) = splitKeys ks
       (met, perm, n) = createMeta ks'
+
+      w = the $ maximum $ histogram (I1 n) perm
+      -- TODO: maybe need multiple variations:
+      -- - if first level in multidimensional table: many duplicates -> can be smaller
+      -- - if e.g. hashed sparse vector: no duplicates -> should be larger to avoid collisions.
 
       (hset, perm') = insert
         (zipChecked (map unindex1 perm) is)

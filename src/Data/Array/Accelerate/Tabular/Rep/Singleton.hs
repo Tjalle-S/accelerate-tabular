@@ -11,7 +11,7 @@
 {-# LANGUAGE FlexibleInstances     #-}
 
 module Data.Array.Accelerate.Tabular.Rep.Singleton (
-  Singleton, UnsafeCompleteSingleton
+  UnsafeCompleteSingleton
 ) where
 
 import Data.Array.Accelerate
@@ -26,6 +26,11 @@ import Data.Array.Accelerate.Unsafe (undef)
 data Singleton
 
 -- | Stores a single key on this level for each key in the parent levels.
+-- Assumes that there is exactly 1 child key for each parent.
+--
+-- Note that no additional checks are performed. In particular:
+-- - If a single parent has multiple child keys, only 1 is stored, non-deterministically.
+-- - If a parent key has no child keys, the key stored is undefined.
 --
 data UnsafeCompleteSingleton
 
@@ -37,6 +42,10 @@ instance (Rep rep keys, Elt key) => Rep (rep :.: Singleton) (keys :.: key) where
   type MetaR (rep :.: Singleton) (keys :.: key) = (Meta rep keys, Vector key)
 
   emptyMeta = SingletonMeta emptyMeta emptyVector
+
+
+-- Unsafe Singleton instances.
+-- ---------------------------
 
 instance (Rep rep keys, Elt key) =>
   Rep (rep :.: UnsafeCompleteSingleton) (keys :.: key) where

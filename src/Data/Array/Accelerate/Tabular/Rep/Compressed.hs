@@ -14,6 +14,7 @@
 module Data.Array.Accelerate.Tabular.Rep.Compressed (
   Compressed
 , OrdCompressed
+, NonUniqueCompressed
 ) where
 
 import Data.Array.Accelerate
@@ -27,6 +28,8 @@ import Data.Type.Equality
 import Data.Array.Accelerate.Data.Semigroup
 import Data.Array.Accelerate.Unsafe (undef)
 
+import Prelude (id)
+
 -- | Stores only keys present in the table, in a segmented vector.
 --
 data Compressed
@@ -35,6 +38,8 @@ data Compressed
 --
 data OrdCompressed
 
+-- | Like 'Compressed', but may contain duplicate keys.
+data NonUniqueCompressed
 
 -- Compressed instances.
 -- ---------------------
@@ -84,6 +89,32 @@ instance (Rep rep keys, Ord key) =>
     in  (met', scatter perm' (fill (shape perm') undef) perm'', the n')
 
 
+-- Non-unique compressed instances.
+-- --------------------------------
+
+instance (Rep rep keys, Ord key) =>
+  Rep (rep :.: NonUniqueCompressed) (keys :.: key) where
+
+  type MetaR (rep :.: NonUniqueCompressed) (keys :.: key) =
+    CompressedMetaR rep keys key
+
+  emptyMeta = emptyCompressed
+
+  createMeta ks = 
+    let (ks', is)      = splitKeys ks
+        (met, perm, n) = createMeta ks'
+
+        (_, is', perm') = unzip3 
+          $ sortBy (comparing fst3) 
+          $ zipChecked3 perm is (generate (shape is) id) 
+
+
+        histo = histogram (I1 n) perm
+
+        met' = CompressedMeta met (scanl1 (+) histo) is'
+    in (met', perm', length is)
+
+
 -- Local utilities for compressed representations.
 -- -----------------------------------------------
 
@@ -111,12 +142,6 @@ emptyCompressed :: (IsCompressed rep r keys key)
                 => Acc (Meta (rep :.: r) (keys :.: key))
 emptyCompressed = let s = fill (I1 1) 0
                   in  CompressedMeta emptyMeta s emptyVector
-
-histogram :: Exp DIM1 -> Acc (Vector DIM1) -> Acc (Vector Int)
-histogram n ids =
-  let zeros = fill n 0
-      ones  = fill (shape ids) 1
-  in  permute' (+) zeros (map Just_ $ zipChecked ids ones)
 
 mkHeadFlags :: Exp DIM1 -> Acc (Segments Int) -> Acc (Vector Bool)
 mkHeadFlags n seg =
