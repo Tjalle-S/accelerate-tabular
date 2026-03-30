@@ -11,56 +11,113 @@
 
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE StandaloneDeriving    #-}
+{-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE BlockArguments #-}
 
 module Data.Array.Accelerate.Tabular.Prelude (
   Table (..)
 , pattern Table_, meta_, vals_
 , emptyTable
 , createTable
+, index, unsafeIndex
+, (!?), (!)
+, map
+, unit, the
+, foldAll
+, fold1All
 ) where
 
-import Data.Array.Accelerate
-import Data.Array.Accelerate.Unsafe ( undef )
+import Data.Array.Accelerate hiding (Scalar, the, unit, map, fold, foldAll, (!))
+import Data.Array.Accelerate qualified as A
 import Data.Array.Accelerate.Data.Functor
+import Data.Array.Accelerate.Data.Maybe
 
 import Data.Array.Accelerate.Tabular.Classes.Rep
 import Data.Array.Accelerate.Tabular.Classes.Index
-import Control.DeepSeq (NFData)
+import Data.Array.Accelerate.Tabular.Table
 
--- | A table, consisting of metadata and values.
+-- | Scalar tables hold a single value.
+type Scalar = Table Z Z
+
+-- | Construct a single-elemement table from a scalar value.
+unit :: (Elt val) => Exp val -> Acc (Scalar val)
+unit x = Table_ emptyMeta $ generate (I1 1) (const $ Just_ x)
+
+-- | Extract the element from a single-element table.
+the :: (Elt val) => Acc (Scalar val) -> Exp val
+the = (! Z_) -- Assuming a Scalar table always contains exactly one value.
+
+map :: (Rep rep key, Elt val, Elt val')
+    => (Exp val -> Exp val')
+    -> Acc (Table rep key val)
+    -> Acc (Table rep key val')
+map f Table_ { meta_, vals_ } = Table_ meta_ (A.map (fmap f) vals_)
+
+
+-- | Accesses the value at the given key.
+-- If the given key is not present, returns 'Nothing_'.
 --
-data Table rep key val = Table {
-  -- | The metadata storing the present keys.
-  --
-  meta :: Meta rep key
-  -- | The array of values.
-  --
-, vals :: Vector val
-} deriving (Generic)
+index :: (Index rep key, Elt val)
+      => Acc (Table rep key val)
+      -> Exp key
+      -> Exp (Maybe val)
+index Table_ { meta_, vals_ } key = 
+  let mi = toLinearIndex meta_ key
+      mmv = fmap (vals_ !!) mi
+  in  mmv & match \case
+        Nothing_ -> Nothing_
+        Just_ mv -> mv
+      
+-- | Infix variant of 'index'.
+--
+(!?) :: (Index rep key, Elt val)
+     => Acc (Table rep key val)
+     -> Exp key
+     -> Exp (Maybe val)
+(!?) = index
 
-deriving instance (Show (Meta rep key), Elt val, Show val) =>
-  Show (Table rep key val)
-instance (Arrays (Meta rep key), Elt val) => Arrays (Table rep key val)
-instance (NFData (Meta rep key), Elt val) => NFData (Table rep key val)
+-- | Like 'index', but performs no checks.
+-- If the key is not present, the behaviour of this function is undefined.
+--
+-- Only use if you are absolutely certain the key is present.
+--
+unsafeIndex :: (Index rep key, Elt val)
+            => Acc (Table rep key val)
+            -> Exp key
+            -> Exp val
+unsafeIndex Table_ { meta_, vals_ } key = 
+  fromJust (vals_ !! unsafeToLinearIndex meta_ key)
 
-pattern Table_ :: (Arrays (Meta rep key), Elt val)
-               => Acc (Meta rep key)
-               -> Acc (Vector val)
-               -> Acc (Table rep key val)
-pattern Table_ { meta_, vals_ } = Pattern (meta_, vals_)
-{-# COMPLETE Table_ #-}
+-- | Infix variation of 'unsafeIndex'.
+--
+(!) :: (Index rep key, Elt val)
+    => Acc (Table rep key val)
+    -> Exp key
+    -> Exp val
+(!) = unsafeIndex
 
--- | Create an empty table.
--- 
-emptyTable :: (Rep rep key, Elt val) => Acc (Table rep key val)
-emptyTable = Table_ {
-  meta_ = emptyMeta
-, vals_ = fill (I1 0) undef
-}
 
-createTable :: (Rep rep key, Elt val) => Acc (Vector (key, val))
-            -> Acc (Table rep key val)
-createTable kvs = 
-  let (ks, vs) = unzip kvs
-      (met, perm, n) = createMeta ks
-  in  Table_ met (scatter (map unindex1 perm) (fill (I1 n) undef) vs)
+-- | Reduction of a table of arbitrary dimensionality to a single scalar value.
+-- The first argument needs to be function that is both associative /and/ commutative.
+--
+foldAll :: (Rep rep key, Elt val)
+        => (Exp val -> Exp val -> Exp val)
+        -> Exp val
+        -> Acc (Table rep key val)
+        -> Acc (Scalar val)
+foldAll f e Table_ { vals_ } = 
+  let res = A.fold (combineMaybe f) (Just_ e) vals_
+  in  Table_ emptyMeta (flatten res)
+
+combineMaybe :: Elt a
+             => (Exp a -> Exp a -> Exp a)
+             -> Exp (Maybe a)
+             -> Exp (Maybe a)
+             -> Exp (Maybe a)
+combineMaybe f mx my = T2 mx my & match \case
+  T2 Nothing_  Nothing_  -> Nothing_
+  T2 (Just_ x) Nothing_  -> Just_ x
+  T2 Nothing_  (Just_ y) -> Just_ y
+  T2 (Just_ x) (Just_ y) -> Just_ (f x y)

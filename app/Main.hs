@@ -7,7 +7,7 @@ module Main (main) where
 
 import qualified Prelude
 
-import Data.Array.Accelerate
+import Data.Array.Accelerate hiding (foldAll)
 import Data.Array.Accelerate.LLVM.Native
 import Data.Array.Accelerate.Data.Sort.Quick
 
@@ -20,6 +20,7 @@ import Data.Array.Accelerate.Data.Semigroup
 import Data.Array.Accelerate.Unsafe (undef)
 
 type I2 = Z :.: Int :.: Int
+type D2 = Z :.: Dense :.: Dense
 type CSR = Z :.: Dense :.: OrdCompressed
 type CSF = Z :.: OrdCompressed :.: OrdCompressed
 
@@ -42,13 +43,13 @@ main = let
 
            d1s = [2,   2,    2,    1,   1,   8,   24]
            d2s = [3,   1,    0,    4,   1,   5,   3]
-           d3s = [1,   2,    2,    3,   4,   5,   6]
+        --    d3s = [1,   2,    2,    3,   4,   5,   6]
            vs  = [2.3, 21.1, 12.0, 1.4, 5.1, 8.5, 24.3]
 
-           ks = zipWith3 (\d1 d2 d3 -> Z_ ::.: d1 ::.: d2 ::.: d3) (use d1s) (use d2s) (use d3s)
+           ks = zipWith (\d1 d2 -> Z_ ::.: d1 ::.: d2) (use d1s) (use d2s)
            kvs = zip ks (use vs)
 
-           vec = createTable @COO @I3 @Float $ kvs
+           vec = foldAll (+) 0 $ createTable @HC @I2 @Float $ kvs
 
 
        in  Prelude.print $ run vec

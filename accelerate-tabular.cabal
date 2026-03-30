@@ -29,6 +29,7 @@ library
       Data.Array.Accelerate.Tabular.Classes.Index
       Data.Array.Accelerate.Tabular.Classes.IndexKey
       Data.Array.Accelerate.Tabular.Classes.Rep
+      Data.Array.Accelerate.Tabular.Monoid
       Data.Array.Accelerate.Tabular.Prelude
       Data.Array.Accelerate.Tabular.Rep
       Data.Array.Accelerate.Tabular.Rep.Compressed
@@ -38,6 +39,7 @@ library
       Data.Array.Accelerate.Tabular.Rep.Range
       Data.Array.Accelerate.Tabular.Rep.Singleton
       Data.Array.Accelerate.Tabular.Rep.Snoc
+      Data.Array.Accelerate.Tabular.Table
       Data.Array.Accelerate.Tabular.Util
   other-modules:
       Paths_accelerate_tabular
