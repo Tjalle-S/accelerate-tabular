@@ -17,14 +17,12 @@
 {-# LANGUAGE BlockArguments #-}
 
 module Data.Array.Accelerate.Tabular.Prelude (
-  Table (..)
-, pattern Table_, meta_, vals_
-, emptyTable
+  emptyTable
 , createTable
 , index, unsafeIndex
 , (!?), (!)
 , map
-, unit, the
+, Scalar, unit, the
 , foldAll
 , fold1All
 ) where
@@ -37,6 +35,7 @@ import Data.Array.Accelerate.Data.Maybe
 import Data.Array.Accelerate.Tabular.Classes.Rep
 import Data.Array.Accelerate.Tabular.Classes.Index
 import Data.Array.Accelerate.Tabular.Table
+import Data.Array.Accelerate.Tabular.Util
 
 -- | Scalar tables hold a single value.
 type Scalar = Table Z Z
@@ -111,13 +110,3 @@ foldAll f e Table_ { vals_ } =
   let res = A.fold (combineMaybe f) (Just_ e) vals_
   in  Table_ emptyMeta (flatten res)
 
-combineMaybe :: Elt a
-             => (Exp a -> Exp a -> Exp a)
-             -> Exp (Maybe a)
-             -> Exp (Maybe a)
-             -> Exp (Maybe a)
-combineMaybe f mx my = T2 mx my & match \case
-  T2 Nothing_  Nothing_  -> Nothing_
-  T2 (Just_ x) Nothing_  -> Just_ x
-  T2 Nothing_  (Just_ y) -> Just_ y
-  T2 (Just_ x) (Just_ y) -> Just_ (f x y)

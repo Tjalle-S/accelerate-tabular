@@ -1,9 +1,9 @@
-{-# LANGUAGE NoImplicitPrelude     #-}
+{-# LANGUAGE NoImplicitPrelude       #-}
 
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE MultiParamTypeClasses   #-}
 
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE FlexibleContexts        #-}
+{-# LANGUAGE FlexibleInstances       #-}
 
 module Data.Array.Accelerate.Tabular.Classes.Index (
   Index (..)

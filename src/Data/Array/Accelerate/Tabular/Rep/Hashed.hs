@@ -19,6 +19,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE BlockArguments #-}
+{-# OPTIONS_GHC -Wno-name-shadowing #-}
 
 module Data.Array.Accelerate.Tabular.Rep.Hashed (
   Hashed
@@ -32,6 +33,8 @@ import Data.Array.Accelerate.Tabular.Rep.Snoc
 import Data.Array.Accelerate.Tabular.Util
 import Data.Array.Accelerate.Data.Hashable (Hashable(hash))
 import Data.Array.Accelerate.Data.Maybe (maybe)
+import Data.Array.Accelerate.Tabular.Classes.Fold
+import qualified Prelude as P
 
 data HashStatus = Todo | Done
   deriving (Generic, Elt, Show)
@@ -67,6 +70,20 @@ instance (Rep rep keys, Eq key, Hashable key) =>
       met' = HashedMeta met hset
 
     in (met', perm', n * w)
+
+
+instance (Fold rep keys, Eq key, Hashable key) =>
+  Fold (rep :.: Hashed) (keys :.: key) where
+
+  type RepFold (rep :.: Hashed) (keys :.: key) = rep
+  type KeyFold (rep :.: Hashed) (keys :.: key) = keys
+
+  foldMeta HashedMeta { met, hset } = 
+    let seg  = P.snd (foldMeta met)
+        len  = sum seg
+        seg' = fill (I1 $ the len) (the $ width hset)
+    in (met, seg')
+  
 
 -- Local utilities.
 -- ----------------

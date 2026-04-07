@@ -27,6 +27,7 @@ dependencies:
 - containers-accelerate
 - hashable-accelerate
 - deepseq
+- microlens >= 0.5.0.0 && < 0.6
 
 ghc-options:
 - -Wall

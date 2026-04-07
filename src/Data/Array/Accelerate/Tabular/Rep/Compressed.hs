@@ -28,6 +28,8 @@ import Data.Type.Equality
 import Data.Array.Accelerate.Data.Semigroup
 import Data.Array.Accelerate.Unsafe (undef)
 
+import Data.Array.Accelerate.Tabular.Classes.Fold
+
 import Prelude (id)
 
 -- | Stores only keys present in the table, in a segmented vector.
@@ -89,6 +91,15 @@ instance (Rep rep keys, Ord key) =>
     in  (met', scatter perm' (fill (shape perm') undef) perm'', the n')
 
 
+instance (Rep rep keys, Ord key) =>
+  Fold (rep :.: OrdCompressed) (keys :.: key) where
+
+  type RepFold (rep :.: OrdCompressed) (keys :.: key) = rep
+  type KeyFold (rep :.: OrdCompressed) (keys :.: key) = keys
+
+  foldMeta = foldCompressed
+
+
 -- Non-unique compressed instances.
 -- --------------------------------
 
@@ -114,6 +125,14 @@ instance (Rep rep keys, Ord key) =>
         met' = CompressedMeta met (scanl1 (+) histo) is'
     in (met', perm', length is)
 
+
+instance (Rep rep keys, Ord key) =>
+  Fold (rep :.: NonUniqueCompressed) (keys :.: key) where
+
+  type RepFold (rep :.: NonUniqueCompressed) (keys :.: key) = rep
+  type KeyFold (rep :.: NonUniqueCompressed) (keys :.: key) = keys
+
+  foldMeta = foldCompressed
 
 -- Local utilities for compressed representations.
 -- -----------------------------------------------
@@ -142,6 +161,19 @@ emptyCompressed :: (IsCompressed rep r keys key)
                 => Acc (Meta (rep :.: r) (keys :.: key))
 emptyCompressed = let s = fill (I1 1) 0
                   in  CompressedMeta emptyMeta s emptyVector
+
+foldCompressed :: ( IsCompressed rep r keys key
+                  , RepFold (rep :.: r) (keys :.: key) ~ rep
+                  , KeyFold (rep :.: r) (keys :.: key) ~ keys
+                  )
+               => Acc (Meta (rep :.: r) (keys :.: key))
+               -> ( Acc (Meta (RepFold (rep :.: r) (keys :.: key))
+                              (KeyFold (rep :.: r) (keys :.: key)))
+                  , Acc (Segments Int)
+                  )
+foldCompressed CompressedMeta { met, seg } = 
+  let seg' = stencil (\(l, m, _) -> m - l) (function $ const 0) seg
+  in  (met, seg')
 
 mkHeadFlags :: Exp DIM1 -> Acc (Segments Int) -> Acc (Vector Bool)
 mkHeadFlags n seg =

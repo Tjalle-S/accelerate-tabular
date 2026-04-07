@@ -9,6 +9,7 @@
 
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE ConstraintKinds #-}
 
 module Data.Array.Accelerate.Tabular.Rep.Singleton (
   UnsafeCompleteSingleton
@@ -20,6 +21,10 @@ import Data.Array.Accelerate.Tabular.Classes.Rep
 import Data.Array.Accelerate.Tabular.Rep.Snoc
 import Data.Array.Accelerate.Tabular.Util
 import Data.Array.Accelerate.Unsafe (undef)
+import Data.Array.Accelerate.Tabular.Classes.Fold
+
+import Prelude (type (~))
+
 
 -- | Stores a single key on this level for each key in the parent levels.
 --
@@ -29,6 +34,7 @@ data Singleton
 -- Assumes that there is exactly 1 child key for each parent.
 --
 -- Note that no additional checks are performed. In particular:
+--
 -- - If a single parent has multiple child keys, only 1 is stored, non-deterministically.
 -- - If a parent key has no child keys, the key stored is undefined.
 --
@@ -67,14 +73,34 @@ instance (Rep rep keys, Elt key) =>
       in (met', perm, n)
 
 
+instance (Fold rep keys, Elt key) =>
+  Fold (rep :.: UnsafeCompleteSingleton) (keys :.: key) where
+
+  type RepFold (rep :.: UnsafeCompleteSingleton) (keys :.: key) = rep
+  type KeyFold (rep :.: UnsafeCompleteSingleton) (keys :.: key) = keys
+
+  foldMeta SingletonMeta { met } = 
+    let (_, seg) = foldMeta met
+    in  (met, seg)
+  
 
 
 -- Local utilities.
 -- ----------------
 
-pattern SingletonMeta :: (Arrays (Meta rep keys), Elt key)
-              => Acc (Meta rep keys)
-              -> Acc (Vector key)
-              -> Acc (Meta (rep :.: Singleton) (keys :.: key))
+type SingletonMetaR rep keys key = (Meta rep keys, Vector key)
+
+type IsSingleton rep r keys key =
+  ( Rep   (rep :.: r) (keys :.: key)
+  , MetaR (rep :.: r) (keys :.: key) ~ SingletonMetaR rep keys key
+  )
+
+pattern SingletonMeta :: ( IsSingleton rep r keys key
+                         , Arrays (Meta rep keys)
+                         , Elt key
+                         )
+                      => Acc (Meta rep keys)
+                      -> Acc (Vector key)
+                      -> Acc (Meta (rep :.: r) (keys :.: key))
 pattern SingletonMeta { met, ks } = Meta_ (T2 met ks)
 {-# COMPLETE SingletonMeta #-}

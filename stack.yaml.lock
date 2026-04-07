@@ -46,6 +46,27 @@ packages:
       size: 425
   original:
     hackage: monadLib-3.10.3@sha256:026ba169762e63f0fe5f5c78829808f522a28730043bc3ad9b7c146baedf709f,637
+- completed:
+    hackage: microlens-0.5.0.0@sha256:af10ae1d922c543b2ec7cbad0f92ce74572621146404bb341fa0cc016ebb59dc,4762
+    pantry-tree:
+      sha256: d5211ca01e39d39db3031a20a0ca59ae13872e79358f0c3de9dfea3197bce9a6
+      size: 526
+  original:
+    hackage: microlens-0.5.0.0
+- completed:
+    hackage: microlens-mtl-0.2.1.1@sha256:ffa06b79c2494f0d63f1bc2613bdf9315bd50010dd6849ef62f24eaa24efb2d0,2045
+    pantry-tree:
+      sha256: 317c5e5350b7a84ec5e5e7ea8b2b3992b86397bce8b4252bba8dc52ffc232d27
+      size: 344
+  original:
+    hackage: microlens-mtl-0.2.1.1
+- completed:
+    hackage: microlens-th-0.4.3.18@sha256:15d9e17a5399992ec3ad68f7a8de214c528de8bc2f52da14b89a15c578572bce,2500
+    pantry-tree:
+      sha256: 4ba0435c5b7f996c7821e365749d5f74846726049944714139d90282c26b17b9
+      size: 558
+  original:
+    hackage: microlens-th-0.4.3.18
 snapshots:
 - completed:
     sha256: 23bb9bb355bfdb1635252e120a29b712f0d5e8a6c6a65c5ab5bd6692f46c438e

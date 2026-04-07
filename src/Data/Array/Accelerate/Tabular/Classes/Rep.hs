@@ -27,13 +27,24 @@ class (Elt key, Arrays (MetaR rep key)) => Rep rep key where
 
   -- | The metadata necessary for storing the keys, and associating them with
   -- a vector of values.
+  --
   type MetaR rep key
 
+
+  -- Construction.
+
   -- | Create metadata for an table storing no keys or values.
+  --
   emptyMeta :: Acc (Meta rep key)
 
+  -- | Create metadata from a collection of keys.
+  --
+  -- Also computes a mapping from keys to the position in the metadata
+  -- of the next level, and the size of this level.
+  --
   createMeta :: Acc (Vector key)
              -> (Acc (Meta rep key), Acc (Vector DIM1), Exp Int)
+
 
 newtype Meta rep key = Meta (MetaR rep key)
   deriving (Generic)
@@ -57,3 +68,9 @@ instance Rep Z Z where
   createMeta ks =
     let perm = generate (shape ks) (const $ I1 0)
     in  (emptyMeta, perm, 1)
+
+reindex :: (Rep rep' key', Rep rep key)
+        => (Exp key -> Exp key')
+        -> Acc (Meta rep key)
+        -> (Acc (Meta rep' key'), Acc (Vector DIM1))
+reindex = undefined

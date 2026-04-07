@@ -9,10 +9,13 @@
 
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module Data.Array.Accelerate.Tabular.Rep.Dense (
   Dense
 ) where
+
+import qualified Prelude as P
 
 import Data.Array.Accelerate
 import Data.Array.Accelerate.Data.Functor
@@ -22,6 +25,8 @@ import Data.Array.Accelerate.Tabular.Classes.Index
 import Data.Array.Accelerate.Tabular.Rep.Snoc
 import Data.Array.Accelerate.Tabular.Classes.IndexKey
 import Data.Array.Accelerate.Tabular.Util
+import Data.Array.Accelerate.Tabular.Classes.Fold
+
 
 -- | All keys on this level are present, and the associated values are 
 -- explicitly stored.
@@ -63,6 +68,17 @@ instance (Index rep keys, IndexKey key) =>
       then fmap (\i' -> fromKey (the n) * i' + fromKey i) (toLinearIndex met k)
       else Nothing_
 
+
+instance (Fold rep keys, IndexKey key) => Fold (rep :.: Dense) (keys :.: key) where
+  type RepFold (rep :.: Dense) (keys :.: key) = rep
+  type KeyFold (rep :.: Dense) (keys :.: key) = keys
+
+  foldMeta DenseMeta { met, n } = 
+    let seg  = P.snd (foldMeta met)
+        len  = sum seg
+        seg' = fill (I1 $ the len) (the n)
+    in (met, seg')
+
 -- Local utilities.
 -- ----------------
 
@@ -72,3 +88,4 @@ pattern DenseMeta :: (Arrays (Meta rep keys), Elt key)
               -> Acc (Meta (rep :.: Dense) (keys :.: key))
 pattern DenseMeta { met, n } = Meta_ (T2 met n)
 {-# COMPLETE DenseMeta #-}
+

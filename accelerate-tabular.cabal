@@ -26,6 +26,7 @@ source-repository head
 library
   exposed-modules:
       Data.Array.Accelerate.Tabular
+      Data.Array.Accelerate.Tabular.Classes.Fold
       Data.Array.Accelerate.Tabular.Classes.Index
       Data.Array.Accelerate.Tabular.Classes.IndexKey
       Data.Array.Accelerate.Tabular.Classes.Rep
@@ -34,6 +35,7 @@ library
       Data.Array.Accelerate.Tabular.Rep
       Data.Array.Accelerate.Tabular.Rep.Compressed
       Data.Array.Accelerate.Tabular.Rep.Dense
+      Data.Array.Accelerate.Tabular.Rep.Grouped
       Data.Array.Accelerate.Tabular.Rep.Hashed
       Data.Array.Accelerate.Tabular.Rep.Offset
       Data.Array.Accelerate.Tabular.Rep.Range
@@ -56,6 +58,7 @@ library
     , containers-accelerate
     , deepseq
     , hashable-accelerate
+    , microlens >=0.5.0.0 && <0.6
   default-language: Haskell2010
 
 executable accelerate-tabular-exe
@@ -76,6 +79,7 @@ executable accelerate-tabular-exe
     , containers-accelerate
     , deepseq
     , hashable-accelerate
+    , microlens >=0.5.0.0 && <0.6
   default-language: Haskell2010
 
 test-suite accelerate-tabular-test
@@ -97,6 +101,7 @@ test-suite accelerate-tabular-test
     , containers-accelerate
     , deepseq
     , hashable-accelerate
+    , microlens >=0.5.0.0 && <0.6
   default-language: Haskell2010
 
 benchmark accelerate-tabular-bench
@@ -120,5 +125,6 @@ benchmark accelerate-tabular-bench
     , criterion
     , deepseq
     , hashable-accelerate
+    , microlens >=0.5.0.0 && <0.6
     , random
   default-language: Haskell2010

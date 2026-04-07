@@ -16,3 +16,7 @@ extra-deps:
 - MIP-0.2.0.0
 
 - monadLib-3.10.3@sha256:026ba169762e63f0fe5f5c78829808f522a28730043bc3ad9b7c146baedf709f,637
+
+- microlens-0.5.0.0
+- microlens-mtl-0.2.1.1
+- microlens-th-0.4.3.18
