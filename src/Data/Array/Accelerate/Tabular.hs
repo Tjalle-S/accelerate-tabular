@@ -33,8 +33,8 @@ module Data.Array.Accelerate.Tabular (
 
 -- ** Folding over tables
 , Fold (RepFold, KeyFold)
-, fold
-, foldAll
+, fold, fold1
+, foldAll, fold1All
 
 -- ---------------------------------------------------------------------------
   -- * The /Accelerate/ Expression Language
@@ -81,9 +81,9 @@ module Data.Array.Accelerate.Tabular (
 , pattern T7,  pattern T8,  pattern T9,  pattern T10, pattern T11
 , pattern T12, pattern T13, pattern T14, pattern T15, pattern T16
 
-, pattern Z_, pattern Ix, pattern (::.:), pattern All_, pattern Any_
-, pattern I0, pattern I1, pattern I2, pattern I3, pattern I4
-, pattern I5, pattern I6, pattern I7, pattern I8, pattern I9
+-- , pattern Z_, pattern Ix, pattern (::.:), pattern All_, pattern Any_
+-- , pattern I0, pattern I1, pattern I2, pattern I3, pattern I4
+-- , pattern I5, pattern I6, pattern I7, pattern I8, pattern I9
 
 , pattern Vec2, pattern V2
 , pattern Vec3, pattern V3
@@ -103,9 +103,6 @@ module Data.Array.Accelerate.Tabular (
 -- *** Flow control
 , (?), match, cond, select, while, iterate
 , Assert(assert, assertMessage)
-
--- *** Scalar reduction
-, sfoldl
 
 -- *** Logical operations
 , (&&), (&&!), (||), (||!), not
@@ -141,8 +138,8 @@ module Data.Array.Accelerate.Tabular (
 -- fromFunction,
 -- fromFunctionM,
 
--- *** Lists
-, fromList, toList
+-- -- *** Lists
+-- , fromList, toList
 
 -- ---------------------------------------------------------------------------
 -- * Useful re-exports
@@ -172,14 +169,15 @@ import qualified Prelude as P
 
 import Data.Array.Accelerate hiding (
     map
-  , fold, foldAll
+  , fold, fold1, foldAll, fold1All
   , (!)
   , Scalar, unit, the
   )
 import qualified Data.Array.Accelerate as A
 
-import Data.Array.Accelerate.Tabular.Table
+import Data.Array.Accelerate.Tabular.Prelude.Table
 import Data.Array.Accelerate.Tabular.Prelude
+import Data.Array.Accelerate.Tabular.Prelude.Fold
 import Data.Array.Accelerate.Tabular.Rep
 
 import Data.Array.Accelerate.Tabular.Classes.Rep

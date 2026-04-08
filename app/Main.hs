@@ -1,28 +1,25 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE OverloadedLists #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts #-}
 
 module Main (main) where
 
 import qualified Prelude
 
-import Data.Array.Accelerate hiding (foldAll)
+import Data.Array.Accelerate (zip, zipWith)
 import Data.Array.Accelerate.LLVM.Native
-import Data.Array.Accelerate.Data.Sort.Quick
-
-import Data.Function (on)
 import Data.Array.Accelerate.Tabular.Rep
-import Data.Array.Accelerate.Tabular.Prelude
-import Data.Array.Accelerate.Tabular.Util
 import Data.Array.Accelerate.Tabular.Classes.Rep
-import Data.Array.Accelerate.Data.Semigroup
-import Data.Array.Accelerate.Unsafe (undef)
+import Data.Array.Accelerate.Tabular
+import Data.Array.Accelerate.Tabular.Rep.Grouped
+import Data.Array.Accelerate.Tabular.Classes.Fold (Fold(foldMeta))
 
 type I2 = Z :.: Int :.: Int
 type D2 = Z :.: Dense :.: Dense
-type CSR = Z :.: Dense :.: OrdCompressed
-type CSF = Z :.: OrdCompressed :.: OrdCompressed
+type CSR = Z :.: Dense ::: OrdCompressed
+type CSF = Z :.: OrdCompressed ::: OrdCompressed
 
 type CD = Z :.: OrdCompressed :.: Dense
 
@@ -37,6 +34,8 @@ type COO = Z :.: NonUniqueCompressed :.: UnsafeCompleteSingleton :.: UnsafeCompl
 type I3 = Z :.: Int :.: Int :.: Int
 type CSF3 = Z :.: OrdCompressed :.: OrdCompressed :.: OrdCompressed
 
+type D2' = Z :.: Dense ::: Dense
+
 main :: Prelude.IO ()
 main = let 
           --  vs = [1.0, 3.0, 5.0, 7.0]
@@ -49,7 +48,10 @@ main = let
            ks = zipWith (\d1 d2 -> Z_ ::.: d1 ::.: d2) (use d1s) (use d2s)
            kvs = zip ks (use vs)
 
-           vec = foldAll (+) 0 $ createTable @HC @I2 @Float $ kvs
+           (met, _, _) = createMeta @D2' @I2 ks
+           (_, seg) = foldMeta met
+
+           vec = fold (+) 0 $ createTable @HC @I2 @Float $ kvs
 
 
        in  Prelude.print $ run vec

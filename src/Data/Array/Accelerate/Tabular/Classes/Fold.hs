@@ -6,26 +6,23 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE DataKinds #-}
-
-{-# OPTIONS_GHC -Wno-redundant-constraints #-}
-{-# OPTIONS_GHC -Wno-orphans #-}
-
 module Data.Array.Accelerate.Tabular.Classes.Fold (
   Fold (..)
-, fold
 ) where
 
-import Data.Array.Accelerate hiding (fold)
+import Data.Array.Accelerate
 
 import Data.Array.Accelerate.Tabular.Classes.Rep
-import Data.Array.Accelerate.Tabular.Table
-import Data.Array.Accelerate.Tabular.Util
-import Data.Kind
-import GHC.TypeLits
 
+-- Every type that is an instance of Rep should also be an instance of Fold.
+--
+-- Additionally, the combination of constraints on these type classes leads to
+-- non-terminating instance search, since the instance for Fold Z Z 
+-- gives a table of the same type as result.
+--
+
+-- | Class of representations that support reduction.
+--
 class (Rep rep key, Rep (RepFold rep key) (KeyFold rep key)) =>
   Fold rep key where
 
@@ -45,24 +42,11 @@ class (Rep rep key, Rep (RepFold rep key) (KeyFold rep key)) =>
               , Acc (Segments Int)
               )
 
+-- | Only for internal use.
+-- 
 instance Fold Z Z where
 
   type RepFold Z Z = Z
   type KeyFold Z Z = Z
 
   foldMeta _ = (emptyMeta, generate (I1 1) (const 1))
-
-fold :: (NotScalar rep, Fold rep key, Elt val)
-     => (Exp val -> Exp val -> Exp val)
-     -> Exp val
-     -> Acc (Table rep key val)
-     -> Acc (Table (RepFold rep key) (KeyFold rep key) val)
-fold f e Table_ { meta_, vals_ } = 
-  let (met', seg) = foldMeta meta_
-  in  Table_ met' $ foldSeg (combineMaybe f) (Just_ e) vals_ seg
-
--- | Folds cannot be executed on scalar tables.
-type family NotScalar (rep :: Type) :: Constraint where
-  NotScalar Z   = TypeError (
-    'Text "Folds on scalar tables (Table Z Z val) perform no work and should be omitted.")
-  NotScalar rep = ()

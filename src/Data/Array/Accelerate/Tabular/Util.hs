@@ -10,7 +10,6 @@ module Data.Array.Accelerate.Tabular.Util (
 , fst3, snd3, thd3
 , comparing
 , histogram
-, combineMaybe
 ) where
 
 import Data.Array.Accelerate
@@ -92,15 +91,3 @@ histogram n ids =
   let zeros = fill n 0
       ones  = fill (shape ids) 1
   in  permute' (+) zeros (map Just_ $ zipChecked ids ones)
-
--- | Lift a combination function to a combination function on 'Maybe's.
-combineMaybe :: Elt a
-             => (Exp a -> Exp a -> Exp a)
-             -> Exp (Maybe a)
-             -> Exp (Maybe a)
-             -> Exp (Maybe a)
-combineMaybe f mx my = T2 mx my & match \case
-  T2 Nothing_  Nothing_  -> Nothing_
-  T2 (Just_ x) Nothing_  -> Just_ x
-  T2 Nothing_  (Just_ y) -> Just_ y
-  T2 (Just_ x) (Just_ y) -> Just_ (f x y)

@@ -7,19 +7,21 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
-{-# OPTIONS_GHC -Wno-redundant-constraints #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Data.Array.Accelerate.Tabular.Table (
+{-# OPTIONS_GHC -Wno-redundant-constraints #-}
+
+module Data.Array.Accelerate.Tabular.Prelude.Table (
   Table (..)
+, Scalar
 , pattern Table_, meta_, vals_
-, emptyTable
-, createTable
+, emptyTable, createTable
 ) where
 
-import Data.Array.Accelerate
+import Data.Array.Accelerate hiding (Scalar, unit, the)
 
 import Data.Array.Accelerate.Tabular.Classes.Rep
+import Data.Array.Accelerate.Tabular.Rep.Snoc
 import Control.DeepSeq (NFData)
 import Data.Array.Accelerate.Tabular.Util (emptyVector)
 import Data.Kind
@@ -40,6 +42,10 @@ deriving instance (Show (Meta rep key), Elt val, Show val) =>
   Show (Table rep key val)
 instance (Arrays (Meta rep key), Elt val) => Arrays (Table rep key val)
 instance (NFData (Meta rep key), Elt val) => NFData (Table rep key val)
+
+-- | Scalar tables hold a single value.
+type Scalar = Table Z Z
+
 
 pattern Table_ :: (Arrays (Meta rep key), Elt val)
                => Acc (Meta rep key)
@@ -75,7 +81,7 @@ createTable kvs =
 -- | Allows constraining manual creation of tables to non-scalar tables.
 -- Can be used to enforce the assumptions on scalar tables.
 type family NotScalar (rep :: Type) :: Constraint where
-  NotScalar Z   = TypeError (
+  NotScalar Z          = TypeError (
           'Text "Scalar tables (Table Z Z val) can not be created manually."
     ':$$: 'Text "Use Data.Array.Accelerate.Tabular.unit instead.")
-  NotScalar rep = ()
+  NotScalar (rs :.: r) = ()
