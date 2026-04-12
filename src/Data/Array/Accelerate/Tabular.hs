@@ -1,6 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 {-# LANGUAGE PatternSynonyms   #-}
+{-# LANGUAGE ExplicitNamespaces #-}
 
 module Data.Array.Accelerate.Tabular (
   Table (..)
@@ -32,9 +33,12 @@ module Data.Array.Accelerate.Tabular (
 , map
 
 -- ** Folding over tables
-, Fold (RepFold, KeyFold)
+, Fold
 , fold, fold1
 , foldAll, fold1All
+
+, FoldDescriptor
+, FoldResult
 
 -- ---------------------------------------------------------------------------
   -- * The /Accelerate/ Expression Language
@@ -148,6 +152,8 @@ module Data.Array.Accelerate.Tabular (
 , fromString -- -XOverloadedStrings
 , fromListN  -- -XOverloadedLists
 
+, type (~)
+
 -- ---------------------------------------------------------------------------
 -- Types
 , Int, Int8, Int16, Int32, Int64
@@ -165,6 +171,7 @@ module Data.Array.Accelerate.Tabular (
 , A.Acc, A.Arrays, A.Elt
 ) where
 
+import Prelude (type (~))
 import qualified Prelude as P
 
 import Data.Array.Accelerate hiding (
@@ -181,6 +188,5 @@ import Data.Array.Accelerate.Tabular.Prelude.Fold
 import Data.Array.Accelerate.Tabular.Rep
 
 import Data.Array.Accelerate.Tabular.Classes.Rep
-import Data.Array.Accelerate.Tabular.Classes.Fold
 import Data.Array.Accelerate.Tabular.Classes.Index
 import Data.Array.Accelerate.Tabular.Classes.IndexKey

@@ -14,38 +14,43 @@
 module Data.Array.Accelerate.Tabular.Prelude.Fold (
   fold, fold1
 , foldAll, fold1All
+
+, module Fold
 ) where
 
 import Data.Array.Accelerate hiding (Scalar, fold, fold1, foldAll, fold1All)
 import qualified Data.Array.Accelerate as A
 
 import Data.Array.Accelerate.Tabular.Classes.Rep
-import Data.Array.Accelerate.Tabular.Classes.Fold
+import Data.Array.Accelerate.Tabular.Classes.Fold as Fold
 import Data.Array.Accelerate.Tabular.Prelude.Table
 
 import Data.Kind
 import GHC.TypeLits
+import Control.Applicative (pure)
 
 -- | Reduction of a table of arbitrary dimensionality.
 -- The first argument needs to be function that is both associative /and/ commutative.
-fold :: (NotScalar rep, Fold rep key, Elt val)
-     => (Exp val -> Exp val -> Exp val)
+fold :: (NotScalar rep, Fold rep key, Elt val, FoldDescriptor rep key desc)
+     => desc
+     -> (Exp val -> Exp val -> Exp val)
      -> Exp val
      -> Acc (Table rep key val)
-     -> Acc (Table (RepFold rep key) (KeyFold rep key) val)
-fold f e Table_ { meta_, vals_ } = 
-  let (met', seg) = foldMeta meta_
+     -> Acc (Table (FoldResult rep desc) (FoldResult key desc) val)
+fold d f e Table_ { meta_, vals_ } = 
+  let T2 met' seg = foldMeta (getDescriptor $ pure d) meta_
   in  Table_ met' $ foldSeg (combineMaybe f) (Just_ e) vals_ seg
 
 -- | Variant of 'fold' that requires each segment being folded over to be
 -- non-empty, and does not need a default value.
 --
-fold1 :: (NotScalar rep, Fold rep key, Elt val)
-      => (Exp val -> Exp val -> Exp val)
+fold1 :: (NotScalar rep, Fold rep key, Elt val, FoldDescriptor rep key desc)
+      => desc
+      -> (Exp val -> Exp val -> Exp val)
       -> Acc (Table rep key val)
-      -> Acc (Table (RepFold rep key) (KeyFold rep key) val)
-fold1 f Table_ { meta_, vals_ } = 
-  let (met', seg) = foldMeta meta_
+      -> Acc (Table (FoldResult rep desc) (FoldResult key desc) val)
+fold1 d f Table_ { meta_, vals_ } = 
+  let T2 met' seg = foldMeta (getDescriptor $ pure d) meta_
   in  Table_ met' $ fold1Seg (combineMaybe f) vals_ seg
 
 -- | Reduction of a table of arbitrary dimensionality to a single scalar value.

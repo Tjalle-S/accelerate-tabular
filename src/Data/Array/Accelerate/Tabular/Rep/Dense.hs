@@ -9,13 +9,10 @@
 
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
-{-# OPTIONS_GHC -Wno-orphans #-}
 
 module Data.Array.Accelerate.Tabular.Rep.Dense (
   Dense
 ) where
-
-import qualified Prelude as P
 
 import Data.Array.Accelerate
 import Data.Array.Accelerate.Data.Functor
@@ -69,15 +66,26 @@ instance (Index rep keys, IndexKey key) =>
       else Nothing_
 
 
-instance (Fold rep keys, IndexKey key) => Fold (rep :.: Dense) (keys :.: key) where
-  type RepFold (rep :.: Dense) (keys :.: key) = rep
-  type KeyFold (rep :.: Dense) (keys :.: key) = keys
+instance (Fold rep keys, IndexKey key) =>
+  Fold (rep :.: Dense) (keys :.: key) where
 
-  foldMeta DenseMeta { met, n } = 
-    let seg  = P.snd (foldMeta met)
-        len  = sum seg
-        seg' = fill (I1 $ the len) (the n)
-    in (met, seg')
+  foldMeta d dmet@DenseMeta { met, n } =
+    case d of
+      FoldKeep ->
+        let T2 _ seg = foldMeta FoldKeep met
+            len      = sum seg
+            seg'     = fill (I1 $ the len) (the n)
+        in  T2 dmet seg'
+      FoldGroup FoldKeep ->
+        let T2 met' seg = foldMeta FoldKeep met
+            len         = sum seg
+            seg'        = fill (I1 $ the len) (the n)
+        in  T2 met' seg'
+      FoldGroup rest ->
+        let T2 met' seg = foldMeta rest met
+            seg'        = map (* the n) seg
+        in  T2 met' seg'
+
 
 -- Local utilities.
 -- ----------------

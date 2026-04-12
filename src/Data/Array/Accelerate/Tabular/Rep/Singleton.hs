@@ -76,12 +76,10 @@ instance (Rep rep keys, Elt key) =>
 instance (Fold rep keys, Elt key) =>
   Fold (rep :.: UnsafeCompleteSingleton) (keys :.: key) where
 
-  type RepFold (rep :.: UnsafeCompleteSingleton) (keys :.: key) = rep
-  type KeyFold (rep :.: UnsafeCompleteSingleton) (keys :.: key) = keys
-
-  foldMeta SingletonMeta { met } = 
-    let (_, seg) = foldMeta met
-    in  (met, seg)
+  foldMeta d dmet@SingletonMeta { met } =
+    case d of
+      FoldKeep       -> T2 dmet (asnd $ foldMeta FoldKeep met)
+      FoldGroup rest -> foldMeta rest met
   
 
 

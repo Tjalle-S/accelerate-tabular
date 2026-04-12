@@ -3,23 +3,26 @@
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Main (main) where
 
 import qualified Prelude
 
-import Data.Array.Accelerate (zip, zipWith)
+import Data.Array.Accelerate (zip, zipWith, foldSeg)
 import Data.Array.Accelerate.LLVM.Native
 import Data.Array.Accelerate.Tabular.Rep
 import Data.Array.Accelerate.Tabular.Classes.Rep
 import Data.Array.Accelerate.Tabular
-import Data.Array.Accelerate.Tabular.Rep.Grouped
-import Data.Array.Accelerate.Tabular.Classes.Fold (Fold(foldMeta))
+import Data.Array.Accelerate.Tabular.Classes.Fold
+import Data.Array.Accelerate.Tabular.Prelude.Table
+import Data.Proxy (Proxy (Proxy))
 
 type I2 = Z :.: Int :.: Int
 type D2 = Z :.: Dense :.: Dense
-type CSR = Z :.: Dense ::: OrdCompressed
-type CSF = Z :.: OrdCompressed ::: OrdCompressed
 
 type CD = Z :.: OrdCompressed :.: Dense
 
@@ -34,7 +37,6 @@ type COO = Z :.: NonUniqueCompressed :.: UnsafeCompleteSingleton :.: UnsafeCompl
 type I3 = Z :.: Int :.: Int :.: Int
 type CSF3 = Z :.: OrdCompressed :.: OrdCompressed :.: OrdCompressed
 
-type D2' = Z :.: Dense ::: Dense
 
 main :: Prelude.IO ()
 main = let 
@@ -48,10 +50,7 @@ main = let
            ks = zipWith (\d1 d2 -> Z_ ::.: d1 ::.: d2) (use d1s) (use d2s)
            kvs = zip ks (use vs)
 
-           (met, _, _) = createMeta @D2' @I2 ks
-           (_, seg) = foldMeta met
-
-           vec = fold (+) 0 $ createTable @HC @I2 @Float $ kvs
+           vec = fold (Keep :.: Group :.: Group) (+) 0 $ createTable @D2 @I2 @Float $ kvs
 
 
        in  Prelude.print $ run vec

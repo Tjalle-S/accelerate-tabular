@@ -34,7 +34,6 @@ import Data.Array.Accelerate.Tabular.Util
 import Data.Array.Accelerate.Data.Hashable (Hashable(hash))
 import Data.Array.Accelerate.Data.Maybe (maybe)
 import Data.Array.Accelerate.Tabular.Classes.Fold
-import qualified Prelude as P
 
 data HashStatus = Todo | Done
   deriving (Generic, Elt, Show)
@@ -75,14 +74,23 @@ instance (Rep rep keys, Eq key, Hashable key) =>
 instance (Fold rep keys, Eq key, Hashable key) =>
   Fold (rep :.: Hashed) (keys :.: key) where
 
-  type RepFold (rep :.: Hashed) (keys :.: key) = rep
-  type KeyFold (rep :.: Hashed) (keys :.: key) = keys
-
-  foldMeta HashedMeta { met, hset } = 
-    let seg  = P.snd (foldMeta met)
-        len  = sum seg
-        seg' = fill (I1 $ the len) (the $ width hset)
-    in (met, seg')
+  foldMeta d hmet@HashedMeta { met, hset } =
+    let n = the $ width hset
+    in  case d of
+          FoldKeep ->
+            let T2 _ seg = foldMeta FoldKeep met
+                len      = sum seg
+                seg'     = fill (I1 $ the len) n
+            in  T2 hmet seg'
+          FoldGroup FoldKeep ->
+            let T2 met' seg = foldMeta FoldKeep met
+                len         = sum seg
+                seg'        = fill (I1 $ the len) n
+            in  T2 met' seg'
+          FoldGroup rest ->
+            let T2 met' seg = foldMeta rest met
+                seg'        = map (* n) seg
+            in  T2 met' seg'
   
 
 -- Local utilities.

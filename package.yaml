@@ -20,7 +20,7 @@ extra-source-files:
 description:         Please see the README on GitHub at <https://github.com/githubuser/accelerate-tabular#readme>
 
 dependencies:
-- base >= 4.7 && < 5
+- base >= 4.16 && < 5
 - accelerate
 - accelerate-llvm
 - accelerate-llvm-native
