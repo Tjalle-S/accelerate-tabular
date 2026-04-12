@@ -3,18 +3,22 @@
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Main (main) where
 
 import qualified Prelude
 
-import Data.Array.Accelerate (zip, zipWith)
+import Data.Array.Accelerate (zip, zipWith, foldSeg)
 import Data.Array.Accelerate.LLVM.Native
 import Data.Array.Accelerate.Tabular.Rep
 import Data.Array.Accelerate.Tabular.Classes.Rep
 import Data.Array.Accelerate.Tabular
 import Data.Array.Accelerate.Tabular.Rep.Grouped
-import Data.Array.Accelerate.Tabular.Classes.Fold (Fold(foldMeta))
+import Data.Array.Accelerate.Tabular.Classes.Fold
+import Data.Array.Accelerate.Tabular.Prelude.Table
 
 type I2 = Z :.: Int :.: Int
 type D2 = Z :.: Dense :.: Dense
@@ -51,7 +55,31 @@ main = let
            (met, _, _) = createMeta @D2' @I2 ks
            (_, seg) = foldMeta met
 
-           vec = fold (+) 0 $ createTable @HC @I2 @Float $ kvs
+           vec = fold' (SSucc SZero) (+) 0 $ createTable @D2 @I2 @Float $ kvs
 
 
        in  Prelude.print $ run vec
+
+
+-- | Reduction of a table of arbitrary dimensionality.
+-- The first argument needs to be function that is both associative /and/ commutative.
+fold' :: (Fold' rep key, Elt val, Rep (FoldRepResult rep k) (FoldKeyResult key k))
+     => SNat k
+     -> (Exp val -> Exp val -> Exp val)
+     -> Exp val
+     -> Acc (Table rep key val)
+     -> Acc (Table (FoldRepResult rep k) (FoldKeyResult key k) val)
+fold' k f e Table_ { meta_, vals_ } = 
+  let T2 met' seg = foldMeta' k meta_
+  in  Table_ met' $ foldSeg (combineMaybe f) (Just_ e) vals_ seg
+
+combineMaybe :: Elt a
+             => (Exp a -> Exp a -> Exp a)
+             -> Exp (Maybe a)
+             -> Exp (Maybe a)
+             -> Exp (Maybe a)
+combineMaybe f mx my = T2 mx my & match \case
+  T2 Nothing_  Nothing_  -> Nothing_
+  T2 (Just_ x) Nothing_  -> Just_ x
+  T2 Nothing_  (Just_ y) -> Just_ y
+  T2 (Just_ x) (Just_ y) -> Just_ (f x y)

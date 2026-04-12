@@ -9,7 +9,10 @@
 
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
-{-# OPTIONS_GHC -Wno-orphans #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Data.Array.Accelerate.Tabular.Rep.Dense (
   Dense
@@ -26,6 +29,7 @@ import Data.Array.Accelerate.Tabular.Rep.Snoc
 import Data.Array.Accelerate.Tabular.Classes.IndexKey
 import Data.Array.Accelerate.Tabular.Util
 import Data.Array.Accelerate.Tabular.Classes.Fold
+import Data.Proxy
 
 
 -- | All keys on this level are present, and the associated values are 
@@ -78,6 +82,34 @@ instance (Fold rep keys, IndexKey key) => Fold (rep :.: Dense) (keys :.: key) wh
         len  = sum seg
         seg' = fill (I1 $ the len) (the n)
     in (met, seg')
+
+instance (Fold' rep keys, IndexKey key) => Fold' (rep :.: Dense) (keys :.: key) where
+
+  type Dim (rep :.: Dense) = Succ (Dim rep)
+
+  type instance FoldRepResult (rep :.: Dense) Zero = rep :.: Dense
+  type instance FoldRepResult (rep :.: Dense) (Succ k) = FoldRepResult rep k
+
+  type instance FoldKeyResult (keys :.: key) Zero = keys :.: key
+  type instance FoldKeyResult (keys :.: key) (Succ k) = FoldKeyResult keys k
+
+  foldMeta' k dmet@DenseMeta { met, n } =
+    case k of
+      SSucc (SSucc k') ->
+        let T2 met' seg  = foldMeta' (SSucc k') met
+            seg'         = map (* the n) seg
+        in  T2 met' seg'
+      SSucc SZero      ->
+        let T2 met' seg  = foldMeta' SZero met
+            len  = sum seg
+            seg' = fill (I1 $ the len) (the n)
+        in T2 met' seg'
+      SZero            ->
+        let seg  = asnd $ foldMeta' SZero met
+            len  = sum seg
+            seg' = fill (I1 $ the len) (the n)
+        in T2 dmet seg'
+      
 
 -- Local utilities.
 -- ----------------

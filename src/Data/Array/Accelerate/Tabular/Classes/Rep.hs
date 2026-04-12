@@ -20,6 +20,7 @@ module Data.Array.Accelerate.Tabular.Classes.Rep (
 import Data.Array.Accelerate
 
 import Control.DeepSeq (NFData)
+import GHC.TypeLits (Nat)
 
 -- | Possible representations for tables with a given key type.
 --
@@ -29,6 +30,8 @@ class (Elt key, Arrays (MetaR rep key)) => Rep rep key where
   -- a vector of values.
   --
   type MetaR rep key
+
+  -- type Dim rep key :: Nat
 
 
   -- Construction.

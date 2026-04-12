@@ -1,6 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
 {-# LANGUAGE PatternSynonyms   #-}
+{-# LANGUAGE ExplicitNamespaces #-}
 
 module Data.Array.Accelerate.Tabular (
   Table (..)
@@ -148,6 +149,8 @@ module Data.Array.Accelerate.Tabular (
 , fromString -- -XOverloadedStrings
 , fromListN  -- -XOverloadedLists
 
+, type (~)
+
 -- ---------------------------------------------------------------------------
 -- Types
 , Int, Int8, Int16, Int32, Int64
@@ -165,6 +168,7 @@ module Data.Array.Accelerate.Tabular (
 , A.Acc, A.Arrays, A.Elt
 ) where
 
+import Prelude (type (~))
 import qualified Prelude as P
 
 import Data.Array.Accelerate hiding (
