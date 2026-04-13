@@ -6,6 +6,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Main (main) where
 
@@ -19,6 +20,7 @@ import Data.Array.Accelerate.Tabular
 import Data.Array.Accelerate.Tabular.Rep.Grouped
 import Data.Array.Accelerate.Tabular.Classes.Fold
 import Data.Array.Accelerate.Tabular.Prelude.Table
+import Data.Proxy (Proxy (Proxy))
 
 type I2 = Z :.: Int :.: Int
 type D2 = Z :.: Dense :.: Dense
@@ -55,7 +57,7 @@ main = let
            (met, _, _) = createMeta @D2' @I2 ks
            (_, seg) = foldMeta met
 
-           vec = fold' (SSucc SZero) (+) 0 $ createTable @D2 @I2 @Float $ kvs
+           vec = fold' (Keep :.: Group :.: Group) (+) 0 $ createTable @D2 @I2 @Float $ kvs
 
 
        in  Prelude.print $ run vec
@@ -63,14 +65,14 @@ main = let
 
 -- | Reduction of a table of arbitrary dimensionality.
 -- The first argument needs to be function that is both associative /and/ commutative.
-fold' :: (Fold' rep key, Elt val, Rep (FoldRepResult rep k) (FoldKeyResult key k))
-     => SNat k
-     -> (Exp val -> Exp val -> Exp val)
-     -> Exp val
-     -> Acc (Table rep key val)
-     -> Acc (Table (FoldRepResult rep k) (FoldKeyResult key k) val)
-fold' k f e Table_ { meta_, vals_ } = 
-  let T2 met' seg = foldMeta' k meta_
+fold' :: (Fold''' rep key, Elt val, FoldDescriptor rep key desc)
+      => desc
+      -> (Exp val -> Exp val -> Exp val)
+      -> Exp val
+      -> Acc (Table rep key val)
+      -> Acc (Table (FoldResult' rep desc) (FoldResult' key desc) val)
+fold' d f e Table_ { meta_, vals_ } = 
+  let T2 met' seg = foldMeta''' (getDescriptor $ Prelude.pure d) meta_
   in  Table_ met' $ foldSeg (combineMaybe f) (Just_ e) vals_ seg
 
 combineMaybe :: Elt a

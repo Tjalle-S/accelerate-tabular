@@ -13,15 +13,23 @@
 
 {-# LANGUAGE GADTs              #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE RankNTypes #-}
 
 
 module Data.Array.Accelerate.Tabular.Classes.Fold (
   Fold (..)
+, Fold''' (..)
+, FoldDescriptor (..)
+, FoldDescriptor' (..)
+, Group (..), Keep (..)
+, FoldResult'
 , Fold' (..)
+-- , Fold'' (..)
 , Nat (..)
 , SNat (..)
-, FoldRepResult
-, FoldKeyResult
+-- , FoldRepResult
+-- , FoldKeyResult
 ) where
 
 import Data.Array.Accelerate hiding (Assert)
@@ -71,7 +79,104 @@ instance Fold Z Z where
 
   foldMeta _ = (emptyMeta, generate (I1 1) (const 1))
 
-class (Rep rep key) => Fold' rep key where
+
+
+-- type family RemainsRep rep key (k :: Nat) where
+--   RemainsRep rep key Zero = Rep rep key
+--   RemainsRep rep key (Succ k) = Rep (FoldRepResult rep )
+
+class (Rep rep key) => Fold'' rep key where
+
+  -- type Dim'' rep :: Nat
+
+  foldMeta'' :: (k <= Dim rep)
+             => SNat k
+             -> Acc (Meta rep key)
+             -> Acc ( Meta (FoldResult rep k) (FoldResult key k)
+                    , Segments Int
+                    )
+
+class (Rep rep key) => Fold''' rep key where
+
+  foldMeta''' :: FoldDescriptor  rep key desc
+              => FoldDescriptor' rep key desc
+              -> Acc (Meta rep key)
+              -> Acc ( Meta (FoldResult' rep desc) (FoldResult' key desc)
+                     , Segments Int
+                     )
+
+instance Fold''' Z Z where
+
+  foldMeta''' _ _ = let seg = fill (I1 1) 1
+                    in  T2 emptyMeta seg
+
+
+data Keep  = Keep
+data Group = Group
+
+class (Rep rep key, Rep (FoldResult' rep desc) (FoldResult' key desc)) =>
+  FoldDescriptor rep key desc where
+
+  -- type RepResult rep desc
+  -- type KeyResult key desc
+
+
+  -- | Get a value describing the structure of the descriptor.
+  --
+  getDescriptor :: Proxy desc -> FoldDescriptor' rep key desc
+  -- Note that the use of Proxy here is not strictly required.
+  -- However, having it allows the fold function to be used as e.g.
+  -- `fold (Keep :.: Group)` instead of of `fold (Proxy @(Keep :.: Group))`.
+  -- 
+
+instance (Rep rep key) => FoldDescriptor rep key Keep where
+
+  -- type RepResult rep Keep = rep
+  -- type KeyResult key Keep = key
+
+  getDescriptor = const FoldKeep
+
+instance (FoldDescriptor rep keys desc, Rep (rep :.: r) (keys :.: key)) =>
+  FoldDescriptor (rep :.: r) (keys :.: key) (desc :.: Group) where
+
+  -- type RepResult (rep :.: r)    (desc :.: Group) = rep
+  -- type KeyResult (keys :.: key) (desc :.: Group) = keys
+
+  getDescriptor _ = FoldGroup (getDescriptor Proxy)
+
+
+data FoldDescriptor' rep key desc where
+  FoldKeep  :: FoldDescriptor' rep key Keep
+  FoldGroup :: FoldDescriptor  rep keys desc
+            => FoldDescriptor' rep keys desc
+            -> FoldDescriptor' (rep :.: r) (keys :.: key) (desc :.: Group)
+
+type family FoldResult' t desc where
+  FoldResult' t            Keep  = t
+  FoldResult' (tail :.: _) (desc :.: Group) = FoldResult' tail desc
+
+
+-- class (Rep (FoldRepResult''' rep k) (FoldKeyResult''' key k)) => Fold''' rep key (k :: Nat) where
+
+--   type FoldRepResult''' rep k
+--   type FoldKeyResult''' key k
+
+-- instance (Rep rep key) => Fold''' rep key Zero where
+
+--   type FoldRepResult''' rep Zero = rep
+--   type FoldKeyResult''' key Zero = key
+
+type family Dim'' rep :: Nat where
+  Dim'' Z           = Zero
+  Dim'' (rep :.: _) = Succ (Dim'' rep)
+
+type family FoldResult t (k :: Nat) where
+  FoldResult Z         _        = Z
+  FoldResult (t :.: h) Zero     = t :.: h
+  FoldResult (t :.: _) (Succ k) = FoldResult t k
+
+
+class (Rep rep key, Rep (FoldRepResult rep Zero) (FoldKeyResult key Zero)) => Fold' rep key where
 
   -- type FoldRepResult rep
   -- type FoldKeyResult key
@@ -93,8 +198,12 @@ instance Fold' Z Z where
 
   type Dim Z = Zero
 
+  type FoldRepResult Z Zero = Z
+  type FoldKeyResult Z Zero = Z
+
   foldMeta' _ _ = let seg = fill (I1 1) 1
                   in  T2 emptyMeta seg
+
 
 -- class (Rep rep key) => IsFold fold rep key n where
 

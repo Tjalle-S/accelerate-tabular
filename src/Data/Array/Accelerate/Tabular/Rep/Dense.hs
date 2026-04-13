@@ -13,6 +13,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Data.Array.Accelerate.Tabular.Rep.Dense (
   Dense
@@ -110,6 +111,54 @@ instance (Fold' rep keys, IndexKey key) => Fold' (rep :.: Dense) (keys :.: key) 
             seg' = fill (I1 $ the len) (the n)
         in T2 dmet seg'
       
+instance (Fold''' rep keys, IndexKey key) => Fold''' (rep :.: Dense) (keys :.: key) where
+
+  foldMeta''' d dmet@DenseMeta { met, n } =
+    case d of
+      FoldKeep ->
+        let T2 _ seg = foldMeta''' FoldKeep met
+            len      = sum seg
+            seg'     = fill (I1 $ the len) (the n)
+        in  T2 dmet seg'
+      FoldGroup FoldKeep ->
+        let T2 met' seg = foldMeta''' FoldKeep met
+            len         = sum seg
+            seg'        = fill (I1 $ the len) (the n)
+        in  T2 met' seg'
+      FoldGroup rest ->
+        let T2 met' seg = foldMeta''' rest met
+            seg'        = map (* the n) seg
+        in  T2 met' seg'
+
+
+-- instance (Fold''' rep keys k) =>
+--   Fold''' (rep :.: Dense) (keys :.: key) (Succ k) where
+
+--   type FoldRepResult''' (rep  :.: Dense) (Succ k) = FoldRepResult''' rep  k
+--   type FoldKeyResult''' (keys :.: key)   (Succ k) = FoldKeyResult''' keys k
+
+-- instance (Fold'' rep keys, IndexKey key) =>
+--   Fold'' (rep :.: Dense) (keys :.: key) where
+
+--   -- type Dim'' (rep :.: Dense) = Succ (Dim rep)
+
+--   foldMeta'' k dmet@DenseMeta { met, n } =
+--     case k of
+--       SSucc (SSucc k') ->
+--         let T2 met' seg  = foldMeta'' (SSucc k') met
+--             seg'         = map (* the n) seg
+--         in  T2 met' seg'
+--       SSucc SZero      ->
+--         let T2 met' seg  = foldMeta'' SZero met
+--             len  = sum seg
+--             seg' = fill (I1 $ the len) (the n)
+--         in T2 met' seg'
+--       SZero            ->
+--         let seg  = asnd $ foldMeta'' SZero met
+--             len  = sum seg
+--             seg' = fill (I1 $ the len) (the n)
+--         in T2 dmet seg'
+
 
 -- Local utilities.
 -- ----------------
