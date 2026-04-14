@@ -18,7 +18,7 @@ module Data.Array.Accelerate.Tabular.Rep.Compressed (
 ) where
 
 import Data.Array.Accelerate
-import Data.Array.Accelerate.Data.Sort.Quick
+import Data.Array.Accelerate.Data.Sort.Merge
 
 import Data.Array.Accelerate.Tabular.Classes.Rep
 import Data.Array.Accelerate.Tabular.Rep.Snoc

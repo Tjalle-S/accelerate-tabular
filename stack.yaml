@@ -8,7 +8,6 @@ extra-deps:
 - ./accelerate-llvm/accelerate-llvm
 - ./accelerate-llvm/accelerate-llvm-native
 
-- containers-accelerate-0.1.0.0@sha256:529614e579efe5255f310ea2186af0dcc9373644d4ce6f22c72e9c6903f8a6d9,1895
 - hashable-accelerate-0.1.0.0@sha256:e701ad7211058567eab3254fc977a04f0ea8c7ddd24495b90aa7a89b1619f548,1214
 
 - OptDir-0.0.4@sha256:7a59a4e225a1ea402b82377c9057cf258e45d9d7913b2edd010f7ae8b9e4f8af,861
@@ -20,3 +19,7 @@ extra-deps:
 - microlens-0.5.0.0
 - microlens-mtl-0.2.1.1
 - microlens-th-0.4.3.18
+
+# Contains a fix for merge sort which is not implemented on the master branch.
+- git: https://github.com/sergiodguezc/containers-accelerate.git
+  commit: '3bba481fa9bd2e68ac6deef87e2fb479797ed3ab'
