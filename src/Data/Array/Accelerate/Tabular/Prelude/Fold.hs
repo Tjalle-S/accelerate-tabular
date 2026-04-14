@@ -3,9 +3,11 @@
 {-# LANGUAGE NamedFieldPuns       #-}
 {-# LANGUAGE BlockArguments       #-}
 {-# LANGUAGE LambdaCase           #-}
+{-# LANGUAGE TypeOperators        #-}
 
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE DataKinds            #-}
+
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE UndecidableInstances #-}
 
@@ -15,6 +17,8 @@ module Data.Array.Accelerate.Tabular.Prelude.Fold (
   fold, fold1
 , foldAll, fold1All
 
+, inner, inner1, inner2, inner3
+
 , module Fold
 ) where
 
@@ -22,6 +26,7 @@ import Data.Array.Accelerate hiding (Scalar, fold, fold1, foldAll, fold1All)
 import qualified Data.Array.Accelerate as A
 
 import Data.Array.Accelerate.Tabular.Classes.Rep
+import Data.Array.Accelerate.Tabular.Rep
 import Data.Array.Accelerate.Tabular.Classes.Fold as Fold
 import Data.Array.Accelerate.Tabular.Prelude.Table
 
@@ -97,3 +102,19 @@ type family NotScalar (rep :: Type) :: Constraint where
   NotScalar Z   = TypeError (
     'Text "Folds on scalar tables (Table Z Z val) perform no work and should be omitted.")
   NotScalar rep = ()
+
+-- Common fold descriptors
+-- -----------------------
+
+-- | Reduce the innermost dimension of a table.
+inner, inner1 :: Keep :.: Group
+inner  = Keep :.: Group
+inner1 = inner
+
+-- | Reduce the 2 innermost dimensions of a table.
+inner2 :: Keep :.: Group :.: Group
+inner2 = inner1 :.: Group
+
+-- | Reduce the 3 innermost dimensions of a table.
+inner3 :: Keep :.: Group :.: Group :.: Group
+inner3 = inner2 :.: Group

@@ -36,9 +36,10 @@ module Data.Array.Accelerate.Tabular (
 , Fold
 , fold, fold1
 , foldAll, fold1All
-
 , FoldDescriptor
 , FoldResult
+-- *** Commonly used fold descriptors
+, inner, inner1, inner2, inner3
 
 -- ---------------------------------------------------------------------------
   -- * The /Accelerate/ Expression Language
