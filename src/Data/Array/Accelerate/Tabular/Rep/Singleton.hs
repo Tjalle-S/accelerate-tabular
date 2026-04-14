@@ -63,14 +63,14 @@ instance (Rep rep keys, Elt key) =>
 
     createMeta ks =
       let
-        (ks', is) = splitKeys ks
-        (met, perm, n) = createMeta ks'
+        (ks', is)     = splitKeys ks
+        T3 met perm n = createMeta ks'
 
         perm' = map unindex1 perm
-        target = fill (I1 n) undef
+        target = fill (I1 $ the n) undef
 
         met' = Meta_ $ T2 met (scatter perm' target is)
-      in (met', perm, n)
+      in T3 met' perm n
 
 
 instance (Fold rep keys, Elt key) =>

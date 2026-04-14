@@ -44,14 +44,14 @@ instance (Rep rep keys, IndexKey key) =>
   emptyMeta = DenseMeta emptyMeta (unit $ toKey 0)
 
   createMeta ks =
-    let (ks', is)      = splitKeys ks
-        (met, perm, n) = createMeta ks'
+    let (ks', is)     = splitKeys ks
+        T3 met perm n = createMeta ks'
 
         n'   = 1 + fromKey (the $ maximum is)
         met' = DenseMeta met (unit n')
 
         perm' = zipWith (\(I1 p) i -> I1 $ toKey $ p * n' + fromKey i) perm is
-    in  (met', perm', n * n')
+    in  T3 met' perm' (zipWith (*) n (unit n'))
 
 
 instance (Index rep keys, IndexKey key) =>

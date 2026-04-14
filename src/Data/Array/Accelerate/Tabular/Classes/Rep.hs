@@ -20,7 +20,6 @@ module Data.Array.Accelerate.Tabular.Classes.Rep (
 import Data.Array.Accelerate
 
 import Control.DeepSeq (NFData)
-import GHC.TypeLits (Nat)
 
 -- | Possible representations for tables with a given key type.
 --
@@ -30,8 +29,6 @@ class (Elt key, Arrays (MetaR rep key)) => Rep rep key where
   -- a vector of values.
   --
   type MetaR rep key
-
-  -- type Dim rep key :: Nat
 
 
   -- Construction.
@@ -46,7 +43,7 @@ class (Elt key, Arrays (MetaR rep key)) => Rep rep key where
   -- of the next level, and the size of this level.
   --
   createMeta :: Acc (Vector key)
-             -> (Acc (Meta rep key), Acc (Vector DIM1), Exp Int)
+             -> Acc (Meta rep key, Vector DIM1, Scalar Int)
 
 
 newtype Meta rep key = Meta (MetaR rep key)
@@ -70,10 +67,10 @@ instance Rep Z Z where
 
   createMeta ks =
     let perm = generate (shape ks) (const $ I1 0)
-    in  (emptyMeta, perm, 1)
+    in  T3 emptyMeta perm (unit 1)
 
 reindex :: (Rep rep' key', Rep rep key)
         => (Exp key -> Exp key')
         -> Acc (Meta rep key)
-        -> (Acc (Meta rep' key'), Acc (Vector DIM1))
+        -> Acc (Meta rep' key',Vector DIM1)
 reindex = undefined

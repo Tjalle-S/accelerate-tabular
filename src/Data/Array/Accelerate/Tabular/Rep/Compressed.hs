@@ -65,14 +65,14 @@ instance (Rep rep keys, Ord key) =>
   emptyMeta = emptyCompressed
 
   createMeta ks =
-    let (ks', is)      = splitKeys ks
-        (met, perm, n) = createMeta ks'
+    let (ks', is)     = splitKeys ks
+        T3 met perm n = createMeta ks'
 
         (_, is', perm') = unzip3
           $ sortBy (comparing fst3 <> comparing snd3)
           $ zipChecked3 perm is (enumFromN (shape is) 0)
 
-        histo = histogram (I1 n) perm
+        histo = histogram (I1 $ the n) perm
 
         diff = stencil
           (\(l, m, _) -> l /= m)
@@ -88,7 +88,7 @@ instance (Rep rep keys, Ord key) =>
         perm'' = map (I1 . subtract 1) (scanl1 (+) (map boolToInt flags'))
 
         met' = CompressedMeta met (scanl1 (+) segSizes) is''
-    in  (met', scatter perm' (fill (shape perm') undef) perm'', the n')
+    in  T3 met' (scatter perm' (fill (shape perm') undef) perm'') n'
 
 
 instance (Fold rep keys, Ord key) =>
@@ -109,18 +109,18 @@ instance (Rep rep keys, Ord key) =>
   emptyMeta = emptyCompressed
 
   createMeta ks = 
-    let (ks', is)      = splitKeys ks
-        (met, perm, n) = createMeta ks'
+    let (ks', is)     = splitKeys ks
+        T3 met perm n = createMeta ks'
 
         (_, is', perm') = unzip3 
           $ sortBy (comparing fst3) 
           $ zipChecked3 perm is (generate (shape is) id) 
 
 
-        histo = histogram (I1 n) perm
+        histo = histogram (I1 $ the n) perm
 
         met' = CompressedMeta met (scanl1 (+) histo) is'
-    in (met', perm', length is)
+    in T3 met' perm' (unit $ length is)
 
 
 instance (Fold rep keys, Ord key) =>

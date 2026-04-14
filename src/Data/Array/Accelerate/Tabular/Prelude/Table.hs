@@ -19,6 +19,7 @@ module Data.Array.Accelerate.Tabular.Prelude.Table (
 ) where
 
 import Data.Array.Accelerate hiding (Scalar, unit, the)
+import qualified Data.Array.Accelerate as A
 
 import Data.Array.Accelerate.Tabular.Classes.Rep
 import Data.Array.Accelerate.Tabular.Rep.Snoc
@@ -68,11 +69,11 @@ createTable :: (NotScalar rep, Rep rep key, Elt val)
             => Acc (Vector (key, val))
             -> Acc (Table rep key val)
 createTable kvs = 
-  let (ks, vs)       = unzip kvs
-      (met, perm, n) = createMeta ks
+  let (ks, vs)      = unzip kvs
+      T3 met perm n = createMeta ks
 
       perm'  = map unindex1 perm
-      target = fill (I1 n) Nothing_
+      target = fill (I1 $ A.the n) Nothing_
       vs'    = map Just_ vs
 
   in  Table_ met (scatter perm' target vs')

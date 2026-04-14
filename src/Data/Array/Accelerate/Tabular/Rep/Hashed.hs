@@ -55,20 +55,20 @@ instance (Rep rep keys, Eq key, Hashable key) =>
   createMeta ks =
     let
       (ks', is) = splitKeys ks
-      (met, perm, n) = createMeta ks'
+      T3 met perm n = createMeta ks'
 
-      w = the $ maximum $ histogram (I1 n) perm
+      w = the $ maximum $ histogram (I1 $ the n) perm
       -- TODO: maybe need multiple variations:
       -- - if first level in multidimensional table: many duplicates -> can be smaller
       -- - if e.g. hashed sparse vector: no duplicates -> should be larger to avoid collisions.
 
-      (hset, perm') = insert
+      T2 hset perm' = insert
         (zipChecked (map unindex1 perm) is)
-        (emptyHashSet n w)
+        (emptyHashSet (the n) w)
 
       met' = HashedMeta met hset
 
-    in (met', perm', n * w)
+    in T3 met' perm' (zipWith (*) n (unit w))
 
 
 instance (Fold rep keys, Eq key, Hashable key) =>
@@ -127,12 +127,12 @@ emptyHashSet n w =
 insert :: (Eq key, Hashable key)
        => Acc (Vector (Bucket, key))
        -> Acc (HashSet key)
-       -> (Acc (HashSet key), Acc (Vector DIM1))
+       -> Acc (HashSet key, Vector DIM1)
 insert sks (HashSet { keys, width }) =
   let hks = map (\(T2 b k) -> T4 b (hash k) Todo_ k) sks
       T3 _ work' keys' = awhile condition step (T3 (unit 0) hks keys)
       perm = map (\(T4 b p _ _) -> I1 $ indexOf' b p (the width)) work'
-  in  (HashSet keys' width, perm)
+  in  T2 (HashSet keys' width) perm
   where
     condition :: (Elt key)
               => Acc (Scalar Int, Vector (Bucket, Pos, HashStatus, key), Vector (Maybe key))
