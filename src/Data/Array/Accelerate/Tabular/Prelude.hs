@@ -15,23 +15,24 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DataKinds #-}
 
 module Data.Array.Accelerate.Tabular.Prelude (
-  emptyTable
-, createTable
-, index, unsafeIndex
-, (!?), (!)
+  the, unit
 , map
-, the, unit
 ) where
 
 import Data.Array.Accelerate hiding (Scalar, the, unit, map, fold, foldAll, (!))
 import Data.Array.Accelerate qualified as A
 import Data.Array.Accelerate.Data.Functor
+import Data.Array.Accelerate.Data.Maybe
 
 import Data.Array.Accelerate.Tabular.Prelude.Index
 import Data.Array.Accelerate.Tabular.Classes.Rep
 import Data.Array.Accelerate.Tabular.Prelude.Table
+import Lens.Micro
+
+import Data.Array.Accelerate.Data.Lens ()
 
 map :: (Rep rep key, Elt val, Elt val')
     => (Exp val -> Exp val')

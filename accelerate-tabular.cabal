@@ -25,6 +25,7 @@ source-repository head
 
 library
   exposed-modules:
+      Data.Array.Accelerate.Data.Lens
       Data.Array.Accelerate.Tabular
       Data.Array.Accelerate.Tabular.Classes.Fold
       Data.Array.Accelerate.Tabular.Classes.Index
@@ -85,7 +86,7 @@ executable accelerate-tabular-exe
 
 test-suite accelerate-tabular-test
   type: exitcode-stdio-1.0
-  main-is: Spec.hs
+  main-is: Main.hs
   other-modules:
       Paths_accelerate_tabular
   autogen-modules:
@@ -102,7 +103,10 @@ test-suite accelerate-tabular-test
     , containers-accelerate
     , deepseq
     , hashable-accelerate
+    , hedgehog
     , microlens >=0.5.0.0 && <0.6
+    , tasty
+    , tasty-hedgehog
   default-language: Haskell2010
 
 benchmark accelerate-tabular-bench

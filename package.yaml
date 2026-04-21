@@ -56,7 +56,7 @@ executables:
 
 tests:
   accelerate-tabular-test:
-    main:                Spec.hs
+    main:                Main.hs
     source-dirs:         test
     ghc-options:
     - -threaded
@@ -64,6 +64,9 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - accelerate-tabular
+    - hedgehog
+    - tasty
+    - tasty-hedgehog
 
 benchmarks:
   accelerate-tabular-bench:
@@ -75,6 +78,5 @@ benchmarks:
     - -with-rtsopts=-N
     dependencies:
     - accelerate-tabular
-    - containers-accelerate
     - criterion
     - random

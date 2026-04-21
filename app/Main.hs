@@ -12,7 +12,7 @@ module Main (main) where
 
 import qualified Prelude
 
-import Data.Array.Accelerate (zip, zipWith, foldSeg)
+import Data.Array.Accelerate (zip, zipWith, foldSeg, zipWith3)
 import Data.Array.Accelerate.LLVM.Native
 import Data.Array.Accelerate.Tabular.Rep
 import Data.Array.Accelerate.Tabular.Classes.Rep
@@ -44,13 +44,13 @@ main = let
 
            d1s = [2,   2,    2,    1,   1,   8,   24]
            d2s = [3,   1,    0,    4,   1,   5,   3]
-        --    d3s = [1,   2,    2,    3,   4,   5,   6]
+           d3s = [1,   2,    2,    3,   4,   5,   6]
            vs  = [2.3, 21.1, 12.0, 1.4, 5.1, 8.5, 24.3]
 
-           ks = zipWith (\d1 d2 -> Z_ ::.: d1 ::.: d2) (use d1s) (use d2s)
+           ks = zipWith3 (\d1 d2 d3 -> Z_ ::.: d1 ::.: d2 ::.: d3) (use d1s) (use d2s) (use d3s)
            kvs = zip ks (use vs)
 
-           vec = fold (Keep :.: Group :.: Group) (+) 0 $ createTable @D2 @I2 @Float $ kvs
+           vec = fold (Keep :.: Group :.: Group) (+) 0 $ createTable @CSF3 @I3 @Float $ kvs
 
 
        in  Prelude.print $ run vec

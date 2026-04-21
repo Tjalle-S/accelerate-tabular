@@ -10,12 +10,15 @@
 {-# LANGUAGE TypeOperators #-}
 
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
+{-# LANGUAGE ConstraintKinds #-}
 
 module Data.Array.Accelerate.Tabular.Prelude.Table (
   Table (..)
 , Scalar
+-- , type NotScalar
 , pattern Table_, meta_, vals_
 , emptyTable, createTable
+, NotScalar'
 ) where
 
 import Data.Array.Accelerate hiding (Scalar, unit, the)
@@ -78,11 +81,13 @@ createTable kvs =
 
   in  Table_ met (scatter perm' target vs')
 
+type NotScalar rep = NotScalar' (
+       Text "Scalar tables (Table Z Z val) can not be created manually."
+  :$$: Text "Use Data.Array.Accelerate.Tabular.unit instead.") rep
 
 -- | Allows constraining manual creation of tables to non-scalar tables.
 -- Can be used to enforce the assumptions on scalar tables.
-type family NotScalar (rep :: Type) :: Constraint where
-  NotScalar Z          = TypeError (
-          'Text "Scalar tables (Table Z Z val) can not be created manually."
-    ':$$: 'Text "Use Data.Array.Accelerate.Tabular.unit instead.")
-  NotScalar (rs :.: r) = ()
+--
+type family NotScalar' (msg :: ErrorMessage) rep :: Constraint where
+  NotScalar' msg Z         = TypeError msg
+  NotScalar' _   (_ :.: _) = ()

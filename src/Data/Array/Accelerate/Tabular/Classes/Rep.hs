@@ -1,6 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude     #-}
 
 {-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PatternSynonyms       #-}
 
@@ -10,6 +11,10 @@
 
 {-# LANGUAGE DeriveGeneric         #-}
 {-# LANGUAGE StandaloneDeriving    #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ConstraintKinds #-}
 
 module Data.Array.Accelerate.Tabular.Classes.Rep (
   Rep  (..)
@@ -20,6 +25,8 @@ module Data.Array.Accelerate.Tabular.Classes.Rep (
 import Data.Array.Accelerate
 
 import Control.DeepSeq (NFData)
+import Type.Reflection
+import Data.Data
 
 -- | Possible representations for tables with a given key type.
 --
@@ -31,7 +38,15 @@ class (Elt key, Arrays (MetaR rep key)) => Rep rep key where
   type MetaR rep key
 
 
-  -- Construction.
+  -- Properties
+
+  -- | Whether or not the representation stores keys in sorted order.
+  --
+  type Ordered rep :: Bool
+  type Ordered rep = False -- Conservatively assume it is not.
+
+
+  -- Construction
 
   -- | Create metadata for an table storing no keys or values.
   --
@@ -44,6 +59,14 @@ class (Elt key, Arrays (MetaR rep key)) => Rep rep key where
   --
   createMeta :: Acc (Vector key)
              -> Acc (Meta rep key, Vector DIM1, Scalar Int)
+
+
+  -- | Enumerate all keys in the metadata,
+  -- producing a list of the same length as the values array.
+  -- 
+  -- May contain undefined keys on positions corresponding to a 'Nothing' value.
+  --
+  enumKeys :: Acc (Meta rep key) -> Acc (Vector key)
 
 
 newtype Meta rep key = Meta (MetaR rep key)
@@ -63,14 +86,20 @@ instance Rep Z Z where
 
   type MetaR Z Z = ()
 
+  type Ordered Z = 'True
+
   emptyMeta = Meta_ (lift ())
 
   createMeta ks =
     let perm = generate (shape ks) (const $ I1 0)
     in  T3 emptyMeta perm (unit 1)
 
-reindex :: (Rep rep' key', Rep rep key)
-        => (Exp key -> Exp key')
-        -> Acc (Meta rep key)
-        -> Acc (Meta rep' key',Vector DIM1)
-reindex = undefined
+  enumKeys _ = flatten (unit Z_)
+
+
+testOrdered :: forall rep . (Typeable (Ordered rep))
+            => Proxy rep
+            -> Maybe (Ordered rep :~: True)
+testOrdered _ = eqT @(Ordered rep) @True
+
+type IsOrdered rep = Ordered rep ~ True

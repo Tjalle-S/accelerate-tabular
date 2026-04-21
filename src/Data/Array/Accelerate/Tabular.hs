@@ -183,9 +183,10 @@ import Data.Array.Accelerate hiding (
   )
 import qualified Data.Array.Accelerate as A
 
-import Data.Array.Accelerate.Tabular.Prelude.Table
 import Data.Array.Accelerate.Tabular.Prelude
 import Data.Array.Accelerate.Tabular.Prelude.Fold
+import Data.Array.Accelerate.Tabular.Prelude.Index
+import Data.Array.Accelerate.Tabular.Prelude.Table
 import Data.Array.Accelerate.Tabular.Rep
 
 import Data.Array.Accelerate.Tabular.Classes.Rep
