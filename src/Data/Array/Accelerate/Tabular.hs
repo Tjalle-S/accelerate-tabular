@@ -41,6 +41,9 @@ module Data.Array.Accelerate.Tabular (
 -- *** Commonly used fold descriptors
 , inner, inner1, inner2, inner3
 
+-- ** Reindexing tables
+, reindex, reindexUnique, reindex'
+
 -- ---------------------------------------------------------------------------
   -- * The /Accelerate/ Expression Language
   -- ** Scalar data types
@@ -186,6 +189,7 @@ import qualified Data.Array.Accelerate as A
 import Data.Array.Accelerate.Tabular.Prelude
 import Data.Array.Accelerate.Tabular.Prelude.Fold
 import Data.Array.Accelerate.Tabular.Prelude.Index
+import Data.Array.Accelerate.Tabular.Prelude.Reindex
 import Data.Array.Accelerate.Tabular.Prelude.Table
 import Data.Array.Accelerate.Tabular.Rep
 

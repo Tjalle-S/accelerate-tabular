@@ -35,6 +35,7 @@ library
       Data.Array.Accelerate.Tabular.Prelude
       Data.Array.Accelerate.Tabular.Prelude.Fold
       Data.Array.Accelerate.Tabular.Prelude.Index
+      Data.Array.Accelerate.Tabular.Prelude.Reindex
       Data.Array.Accelerate.Tabular.Prelude.Table
       Data.Array.Accelerate.Tabular.Rep
       Data.Array.Accelerate.Tabular.Rep.Compressed

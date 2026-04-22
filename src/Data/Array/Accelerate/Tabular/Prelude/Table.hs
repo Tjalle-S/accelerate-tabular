@@ -18,7 +18,9 @@ module Data.Array.Accelerate.Tabular.Prelude.Table (
 -- , type NotScalar
 , pattern Table_, meta_, vals_
 , emptyTable, createTable
-, NotScalar'
+
+, NotScalarConstruct
+, NotScalar
 ) where
 
 import Data.Array.Accelerate hiding (Scalar, unit, the)
@@ -60,7 +62,7 @@ pattern Table_ { meta_, vals_ } = Pattern (meta_, vals_)
 
 -- | Create an empty table.
 -- 
-emptyTable :: (NotScalar rep, Rep rep key, Elt val) => Acc (Table rep key val)
+emptyTable :: (NotScalarConstruct rep, Rep rep key, Elt val) => Acc (Table rep key val)
 emptyTable = Table_ {
   meta_ = emptyMeta
 , vals_ = emptyVector
@@ -68,7 +70,7 @@ emptyTable = Table_ {
 
 -- | Construct a new table from the given keys and values.
 --
-createTable :: (NotScalar rep, Rep rep key, Elt val)
+createTable :: (NotScalarConstruct rep, Rep rep key, Elt val)
             => Acc (Vector (key, val))
             -> Acc (Table rep key val)
 createTable kvs = 
@@ -81,13 +83,13 @@ createTable kvs =
 
   in  Table_ met (scatter perm' target vs')
 
-type NotScalar rep = NotScalar' (
+type NotScalarConstruct rep = NotScalar (
        Text "Scalar tables (Table Z Z val) can not be created manually."
   :$$: Text "Use Data.Array.Accelerate.Tabular.unit instead.") rep
 
--- | Allows constraining manual creation of tables to non-scalar tables.
+-- | Allows constraining to non-scalar tables.
 -- Can be used to enforce the assumptions on scalar tables.
 --
-type family NotScalar' (msg :: ErrorMessage) rep :: Constraint where
-  NotScalar' msg Z         = TypeError msg
-  NotScalar' _   (_ :.: _) = ()
+type family NotScalar (msg :: ErrorMessage) rep :: Constraint where
+  NotScalar msg Z         = TypeError msg
+  NotScalar _   (_ :.: _) = ()
