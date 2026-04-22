@@ -53,6 +53,11 @@ instance (Rep rep keys, IndexKey key) =>
         perm' = zipWith (\(I1 p) i -> I1 $ toKey $ p * n' + fromKey i) perm is
     in  T3 met' perm' (zipWith (*) n (unit n'))
 
+  enumKeys DenseMeta { met, n } = expand
+    (const $ the n)
+    (\k i -> k ::. toKey i)
+    (enumKeys met)
+
 
 instance (Index rep keys, IndexKey key) =>
   Index (rep :. Dense) (keys :. key) where

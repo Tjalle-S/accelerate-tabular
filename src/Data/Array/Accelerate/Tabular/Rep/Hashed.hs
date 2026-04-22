@@ -34,6 +34,7 @@ import Data.Array.Accelerate.Tabular.Util
 import Data.Array.Accelerate.Data.Hashable (Hashable(hash))
 import Data.Array.Accelerate.Data.Maybe (maybe)
 import Data.Array.Accelerate.Tabular.Classes.Fold
+import Data.Array.Accelerate.Unsafe (undef)
 
 data HashStatus = Todo | Done
   deriving (Generic, Elt, Show)
@@ -69,6 +70,12 @@ instance (Rep rep keys, Eq key, Hashable key) =>
       met' = HashedMeta met hset
 
     in T3 met' perm' (zipWith (*) n (unit w))
+
+
+  enumKeys HashedMeta { met, hset } = expand
+    (const $ the $ width hset)
+    (\k i -> maybe undef (k ::.) (keys hset !! i))
+    (enumKeys met)
 
 
 instance (Fold rep keys, Eq key, Hashable key) =>

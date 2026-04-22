@@ -8,7 +8,7 @@ module Data.Array.Accelerate.Tabular (
 
 , Rep
 
-, Z, (:.) (..)
+, Z (..), (:.) (..)
 
 -- ** Available level formats
 , Dense
@@ -31,6 +31,7 @@ module Data.Array.Accelerate.Tabular (
 , unsafeIndex, (!)
 
 , map
+, assocs
 
 -- ** Folding over tables
 , Fold

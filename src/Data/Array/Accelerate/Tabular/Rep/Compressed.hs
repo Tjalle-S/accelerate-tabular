@@ -90,6 +90,8 @@ instance (Rep rep keys, Ord key) =>
         met' = CompressedMeta met (scanl1 (+) segSizes) is''
     in  T3 met' (scatter perm' (fill (shape perm') undef) perm'') n'
 
+  enumKeys = enumKeysCompressed
+
 
 instance (Fold rep keys, Ord key) =>
   Fold (rep :. OrdCompressed) (keys :. key) where
@@ -121,6 +123,8 @@ instance (Rep rep keys, Ord key) =>
 
         met' = CompressedMeta met (scanl1 (+) histo) is'
     in T3 met' perm' (unit $ length is)
+
+  enumKeys = enumKeysCompressed
 
 
 instance (Fold rep keys, Ord key) =>
@@ -172,6 +176,17 @@ foldCompressed d cmet@CompressedMeta { met, seg } =
   in  case d of
         FoldKeep       -> T2 cmet seg'
         FoldGroup rest -> T2 (afst $ foldMeta rest met) seg'
+
+enumKeysCompressed :: IsCompressed rep r keys key
+                   => Acc (Meta (rep :. r) (keys :. key))
+                   -> Acc (Vector (keys :. key))
+enumKeysCompressed CompressedMeta { met, seg, ks } =
+  expand ((seg' !) . fst) makeKey (indexed $ enumKeys met)
+  where
+    makeKey (T2 n k) i = let i' = (seg ! n) - (seg' ! n) + i
+                         in  k ::. (ks !! i')
+
+    seg' = stencil (\(l, m, _) -> m - l) (function $ const 0) seg
 
 mkHeadFlags :: Exp DIM1 -> Acc (Segments Int) -> Acc (Vector Bool)
 mkHeadFlags n seg =

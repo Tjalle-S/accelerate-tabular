@@ -20,6 +20,7 @@
 module Data.Array.Accelerate.Tabular.Prelude (
   the, unit
 , map
+, assocs
 ) where
 
 import Data.Array.Accelerate hiding (Scalar, the, unit, map, fold, foldAll, (!))
@@ -47,3 +48,8 @@ unit x = Table_ emptyMeta $ generate (I1 1) (const $ Just_ x)
 -- | Extract the element from a single-element table.
 the :: (Elt val) => Acc (Scalar val) -> Exp val
 the = (! Z_) -- Assuming a Scalar table always contains exactly one value.
+
+assocs :: (Rep rep key, Elt val) => Acc (Table rep key val) -> Acc (Vector (key, val))
+assocs Table_ { meta_, vals_ } = 
+  let kvs = zipWith (\k v -> T2 k <$> v) (enumKeys meta_) vals_
+  in  afst (justs kvs)

@@ -88,6 +88,8 @@ test-suite accelerate-tabular-test
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
+      Gen
+      Properties
       Paths_accelerate_tabular
   autogen-modules:
       Paths_accelerate_tabular

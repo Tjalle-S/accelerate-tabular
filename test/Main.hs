@@ -1,5 +1,9 @@
-{-# LANGUAGE RankNTypes #-}
+-- {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE ImpredicativeTypes #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE TypeOperators #-}
 
 
 import Control.Applicative
@@ -10,45 +14,45 @@ import qualified Data.List as P
 import Test.Tasty
 
 import Data.Array.Accelerate hiding (size)
-import Data.Array.Accelerate.Trafo.Sharing (Afunction(..))
-import Data.Array.Accelerate.Sugar.Shape (size)
-
-import Data.Array.Accelerate.Data.Sort.Merge
 
 import Hedgehog
 import qualified Hedgehog.Gen as G
 import qualified Hedgehog.Range as R
 import Test.Tasty.Hedgehog (testProperty)
 import Data.Array.Accelerate.LLVM.Native (runN)
+import Data.Array.Accelerate.Tabular
+import Properties
+import Data.Proxy (Proxy(Proxy))
+import Data.Array.Accelerate.Tabular.Prelude.Table (NotScalarConstruct)
+import Data.Kind
 
-type Run  = forall a. Arrays a => Acc a -> a
-type RunN = forall f. Afunction f => f -> AfunctionR f
+import Gen
+
 
 main :: P.IO ()
 main = defaultMain tests
 
 tests :: TestTree
 tests = testGroup "Tests"
-  [ testProperty "Merge Sort"  $ testMergeSort runN $ G.int (R.linear 0 2048)
+  [ testGroup "Create preserves assocs" testsCreatePreservesAssocs
 
   ]
 
-testMergeSort :: (Show e, P.Ord e, Ord e) => RunN -> Gen e -> Property
-testMergeSort runN' e = property $ do
-  sh <- forAll dim1
-  xs <- forAll (array sh e)
-  let !go = runN' sort
-  go xs === sortRef P.compare xs
-
-
-sortRef :: Elt a => (a -> a -> Ordering) -> Vector a -> Vector a
-sortRef cmp xs = fromList (arrayShape xs) (P.sortBy cmp $ toList xs)
-
-dim0 :: Gen DIM0
-dim0 = return Z
-
-dim1 :: Gen DIM1
-dim1 = (Z :.) <$> G.int (R.linear 0 1024)
-
-array :: (Shape sh, Elt e) => sh -> Gen e -> Gen (Array sh e)
-array sh gen = fromList sh <$> G.list (R.singleton $ size sh) gen
+testsCreatePreservesAssocs :: [TestTree]
+testsCreatePreservesAssocs = 
+  [ testProperty "Dense / Int" $
+      createPreservesAssocs
+        runN
+        (Proxy @(Z :. Dense))
+        (genAssocs dim1 int)
+  , testProperty "OrdCompressed / Int" $
+      createPreservesAssocs
+        runN
+        (Proxy @(Z :. OrdCompressed))
+        (genAssocs dim1 int)
+  , testProperty "Hashed / Int" $
+      createPreservesAssocs
+        runN
+        (Proxy @(Z :. Hashed))
+        (genAssocs dim1 int)
+  ]
