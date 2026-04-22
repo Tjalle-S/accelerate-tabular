@@ -29,7 +29,7 @@ module Data.Array.Accelerate.Tabular.Rep.Hashed (
 import Data.Array.Accelerate
 
 import Data.Array.Accelerate.Tabular.Classes.Rep
-import Data.Array.Accelerate.Tabular.Rep.Snoc
+
 import Data.Array.Accelerate.Tabular.Util
 import Data.Array.Accelerate.Data.Hashable (Hashable(hash))
 import Data.Array.Accelerate.Data.Maybe (maybe)
@@ -45,9 +45,9 @@ mkPattern ''HashStatus
 data Hashed
 
 instance (Rep rep keys, Eq key, Hashable key) =>
-  Rep (rep :.: Hashed) (keys :.: key) where
+  Rep (rep :. Hashed) (keys :. key) where
 
-  type MetaR (rep :.: Hashed) (keys :.: key) =
+  type MetaR (rep :. Hashed) (keys :. key) =
     (Meta rep keys, HashSet key)
 
   emptyMeta = HashedMeta emptyMeta (emptyHashSet 0 0)
@@ -72,7 +72,7 @@ instance (Rep rep keys, Eq key, Hashable key) =>
 
 
 instance (Fold rep keys, Eq key, Hashable key) =>
-  Fold (rep :.: Hashed) (keys :.: key) where
+  Fold (rep :. Hashed) (keys :. key) where
 
   foldMeta d hmet@HashedMeta { met, hset } =
     let n = the $ width hset
@@ -99,7 +99,7 @@ instance (Fold rep keys, Eq key, Hashable key) =>
 pattern HashedMeta :: (Arrays (Meta rep keys), Hashable key)
                        => Acc (Meta rep keys)
                        -> Acc (HashSet key)
-                       -> Acc (Meta (rep :.: Hashed) (keys :.: key))
+                       -> Acc (Meta (rep :. Hashed) (keys :. key))
 pattern HashedMeta { met, hset } = Meta_ (T2 met hset)
 {-# COMPLETE HashedMeta #-}
 

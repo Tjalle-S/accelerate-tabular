@@ -19,14 +19,14 @@ module Data.Array.Accelerate.Tabular.Classes.Fold (
 import Data.Array.Accelerate
 
 import Data.Array.Accelerate.Tabular.Classes.Rep
-import Data.Array.Accelerate.Tabular.Rep.Snoc
+
 
 import Data.Proxy
 
 -- Every type that is an instance of Rep should also be an instance of Fold.
 --
 -- However, it may be necessary to keep them apart, for syntactic sugar
--- involving keys not defined using '(:.:)'.
+-- involving keys not defined using '(:.)'.
 --
 
 class (Rep rep key) => Fold rep key where
@@ -58,15 +58,15 @@ class (Rep rep key, Rep (FoldResult rep desc) (FoldResult key desc)) =>
   getDescriptor :: Proxy desc -> FoldDescriptor' rep key desc
   -- Note that the use of Proxy here is not strictly required.
   -- However, having it allows the fold function to be used as e.g.
-  -- `fold (Keep :.: Group)` instead of of `fold (Proxy @(Keep :.: Group))`.
+  -- `fold (Keep :. Group)` instead of of `fold (Proxy @(Keep :. Group))`.
   -- 
 
 instance (Rep rep key) => FoldDescriptor rep key Keep where
 
   getDescriptor _ = FoldKeep
 
-instance (FoldDescriptor rep keys desc, Rep (rep :.: r) (keys :.: key)) =>
-  FoldDescriptor (rep :.: r) (keys :.: key) (desc :.: Group) where
+instance (FoldDescriptor rep keys desc, Rep (rep :. r) (keys :. key)) =>
+  FoldDescriptor (rep :. r) (keys :. key) (desc :. Group) where
 
   getDescriptor _ = FoldGroup (getDescriptor Proxy)
 
@@ -77,11 +77,11 @@ data FoldDescriptor' rep key desc where
   FoldKeep  :: FoldDescriptor' rep key  Keep
   FoldGroup :: FoldDescriptor  rep keys desc
             => FoldDescriptor' rep keys desc
-            -> FoldDescriptor' (rep :.: r) (keys :.: key) (desc :.: Group)
+            -> FoldDescriptor' (rep :. r) (keys :. key) (desc :. Group)
 
 -- | Describes the result of folding over a representation
 -- with a given descriptor.
 --
 type family FoldResult t desc where
   FoldResult t            Keep             = t
-  FoldResult (tail :.: _) (desc :.: Group) = FoldResult tail desc
+  FoldResult (tail :. _) (desc :. Group) = FoldResult tail desc

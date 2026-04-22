@@ -21,7 +21,7 @@ import Data.Array.Accelerate
 import Data.Array.Accelerate.Data.Sort.Merge
 
 import Data.Array.Accelerate.Tabular.Classes.Rep
-import Data.Array.Accelerate.Tabular.Rep.Snoc
+
 import Data.Array.Accelerate.Tabular.Util
 
 import Data.Type.Equality
@@ -47,9 +47,9 @@ data NonUniqueCompressed
 -- ---------------------
 
 instance (Rep rep keys, Elt key) =>
-  Rep (rep :.: Compressed) (keys :.: key) where
+  Rep (rep :. Compressed) (keys :. key) where
 
-  type MetaR (rep :.: Compressed) (keys :.: key) = CompressedMetaR rep keys key
+  type MetaR (rep :. Compressed) (keys :. key) = CompressedMetaR rep keys key
 
   emptyMeta = emptyCompressed
 
@@ -58,9 +58,9 @@ instance (Rep rep keys, Elt key) =>
 -- -----------------------------
 
 instance (Rep rep keys, Ord key) =>
-  Rep (rep :.: OrdCompressed) (keys :.: key) where
+  Rep (rep :. OrdCompressed) (keys :. key) where
 
-  type MetaR (rep :.: OrdCompressed) (keys :.: key) = CompressedMetaR rep keys key
+  type MetaR (rep :. OrdCompressed) (keys :. key) = CompressedMetaR rep keys key
 
   emptyMeta = emptyCompressed
 
@@ -92,7 +92,7 @@ instance (Rep rep keys, Ord key) =>
 
 
 instance (Fold rep keys, Ord key) =>
-  Fold (rep :.: OrdCompressed) (keys :.: key) where
+  Fold (rep :. OrdCompressed) (keys :. key) where
 
   foldMeta = foldCompressed
 
@@ -101,9 +101,9 @@ instance (Fold rep keys, Ord key) =>
 -- --------------------------------
 
 instance (Rep rep keys, Ord key) =>
-  Rep (rep :.: NonUniqueCompressed) (keys :.: key) where
+  Rep (rep :. NonUniqueCompressed) (keys :. key) where
 
-  type MetaR (rep :.: NonUniqueCompressed) (keys :.: key) =
+  type MetaR (rep :. NonUniqueCompressed) (keys :. key) =
     CompressedMetaR rep keys key
 
   emptyMeta = emptyCompressed
@@ -124,7 +124,7 @@ instance (Rep rep keys, Ord key) =>
 
 
 instance (Fold rep keys, Ord key) =>
-  Fold (rep :.: NonUniqueCompressed) (keys :.: key) where
+  Fold (rep :. NonUniqueCompressed) (keys :. key) where
 
   foldMeta = foldCompressed
 
@@ -138,21 +138,21 @@ type CompressedMetaR rep keys key = (Meta rep keys, Segments Int, Vector key)
 type IsCompressed rep r keys key = (
     Rep rep keys
   , Elt key
-  , MetaR (rep :.: r) (keys :.: key) ~ CompressedMetaR rep keys key
+  , MetaR (rep :. r) (keys :. key) ~ CompressedMetaR rep keys key
   )
 
 pattern CompressedMeta :: (IsCompressed rep r keys key)
                        => Acc (Meta rep keys)
                        -> Acc (Segments Int)
                        -> Acc (Vector key)
-                       -> Acc (Meta (rep :.: r) (keys :.: key))
+                       -> Acc (Meta (rep :. r) (keys :. key))
 pattern CompressedMeta { met, seg, ks } = Meta_ (T3 met seg ks)
 {-# COMPLETE CompressedMeta #-}
 
 -- | Creates empty metadata for compressed representations.
 --
 emptyCompressed :: (IsCompressed rep r keys key)
-                => Acc (Meta (rep :.: r) (keys :.: key))
+                => Acc (Meta (rep :. r) (keys :. key))
 emptyCompressed = let s = fill (I1 1) 0
                   in  CompressedMeta emptyMeta s emptyVector
 
@@ -160,12 +160,12 @@ emptyCompressed = let s = fill (I1 1) 0
 --
 foldCompressed :: ( IsCompressed rep r keys key
                   , Fold rep keys
-                  , FoldDescriptor (rep :.: r) (keys :.: key) desc
+                  , FoldDescriptor (rep :. r) (keys :. key) desc
                   )
-               => FoldDescriptor' (rep :.: r) (keys :.: key) desc
-               -> Acc (Meta (rep :.: r) (keys :.: key))
-               -> Acc ( Meta (FoldResult (rep  :.: r)   desc)
-                             (FoldResult (keys :.: key) desc)
+               => FoldDescriptor' (rep :. r) (keys :. key) desc
+               -> Acc (Meta (rep :. r) (keys :. key))
+               -> Acc ( Meta (FoldResult (rep  :. r)   desc)
+                             (FoldResult (keys :. key) desc)
                       , Segments Int)
 foldCompressed d cmet@CompressedMeta { met, seg } = 
   let seg' = stencil (\(l, m, _) -> m - l) (function $ const 0) seg

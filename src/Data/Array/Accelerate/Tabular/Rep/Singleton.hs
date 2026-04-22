@@ -18,7 +18,7 @@ module Data.Array.Accelerate.Tabular.Rep.Singleton (
 import Data.Array.Accelerate
 
 import Data.Array.Accelerate.Tabular.Classes.Rep
-import Data.Array.Accelerate.Tabular.Rep.Snoc
+
 import Data.Array.Accelerate.Tabular.Util
 import Data.Array.Accelerate.Unsafe (undef)
 import Data.Array.Accelerate.Tabular.Classes.Fold
@@ -43,9 +43,9 @@ data UnsafeCompleteSingleton
 -- Singleton instances.
 -- --------------------
 
-instance (Rep rep keys, Elt key) => Rep (rep :.: Singleton) (keys :.: key) where
+instance (Rep rep keys, Elt key) => Rep (rep :. Singleton) (keys :. key) where
 
-  type MetaR (rep :.: Singleton) (keys :.: key) = (Meta rep keys, Vector key)
+  type MetaR (rep :. Singleton) (keys :. key) = (Meta rep keys, Vector key)
 
   emptyMeta = SingletonMeta emptyMeta emptyVector
 
@@ -54,9 +54,9 @@ instance (Rep rep keys, Elt key) => Rep (rep :.: Singleton) (keys :.: key) where
 -- ---------------------------
 
 instance (Rep rep keys, Elt key) =>
-  Rep (rep :.: UnsafeCompleteSingleton) (keys :.: key) where
+  Rep (rep :. UnsafeCompleteSingleton) (keys :. key) where
 
-    type MetaR (rep :.: UnsafeCompleteSingleton) (keys :.: key) =
+    type MetaR (rep :. UnsafeCompleteSingleton) (keys :. key) =
       (Meta rep keys, Vector key)
 
     emptyMeta = Meta_ $ T2 emptyMeta emptyVector
@@ -74,7 +74,7 @@ instance (Rep rep keys, Elt key) =>
 
 
 instance (Fold rep keys, Elt key) =>
-  Fold (rep :.: UnsafeCompleteSingleton) (keys :.: key) where
+  Fold (rep :. UnsafeCompleteSingleton) (keys :. key) where
 
   foldMeta d dmet@SingletonMeta { met } =
     case d of
@@ -89,8 +89,8 @@ instance (Fold rep keys, Elt key) =>
 type SingletonMetaR rep keys key = (Meta rep keys, Vector key)
 
 type IsSingleton rep r keys key =
-  ( Rep   (rep :.: r) (keys :.: key)
-  , MetaR (rep :.: r) (keys :.: key) ~ SingletonMetaR rep keys key
+  ( Rep   (rep :. r) (keys :. key)
+  , MetaR (rep :. r) (keys :. key) ~ SingletonMetaR rep keys key
   )
 
 pattern SingletonMeta :: ( IsSingleton rep r keys key
@@ -99,6 +99,6 @@ pattern SingletonMeta :: ( IsSingleton rep r keys key
                          )
                       => Acc (Meta rep keys)
                       -> Acc (Vector key)
-                      -> Acc (Meta (rep :.: r) (keys :.: key))
+                      -> Acc (Meta (rep :. r) (keys :. key))
 pattern SingletonMeta { met, ks } = Meta_ (T2 met ks)
 {-# COMPLETE SingletonMeta #-}

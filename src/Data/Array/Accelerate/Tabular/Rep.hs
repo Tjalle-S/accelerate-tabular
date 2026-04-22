@@ -1,6 +1,5 @@
 module Data.Array.Accelerate.Tabular.Rep (
-  module Snoc
-, module Dense
+  module Dense
 , module Compressed
 , module Offset
 , module Hashed
@@ -8,7 +7,6 @@ module Data.Array.Accelerate.Tabular.Rep (
 , module Singleton
 ) where
 
-import Data.Array.Accelerate.Tabular.Rep.Snoc       as Snoc
 import Data.Array.Accelerate.Tabular.Rep.Dense      as Dense
 import Data.Array.Accelerate.Tabular.Rep.Compressed as Compressed
 import Data.Array.Accelerate.Tabular.Rep.Offset     as Offset

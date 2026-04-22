@@ -18,15 +18,15 @@ import System.IO
 
 -- import qualified Prelude
 
-type Dense1 = Z :.: Dense
-type Dense2 = Z :.: Dense :.: Dense
-type Dense3 = Z :.: Dense :.: Dense :.: Dense
-type Dense4 = Z :.: Dense :.: Dense :.: Dense :.: Dense
+type Dense1 = Z :. Dense
+type Dense2 = Z :. Dense :. Dense
+type Dense3 = Z :. Dense :. Dense :. Dense
+type Dense4 = Z :. Dense :. Dense :. Dense :. Dense
 
-type KeyI1 = Z :.: Int
-type KeyI2 = Z :.: Int :.: Int
-type KeyI3 = Z :.: Int :.: Int :.: Int
-type KeyI4 = Z :.: Int :.: Int :.: Int :.: Int
+type KeyI1 = Z :. Int
+type KeyI2 = Z :. Int :. Int
+type KeyI3 = Z :. Int :. Int :. Int
+type KeyI4 = Z :. Int :. Int :. Int :. Int
 
 main :: IO ()
 main = let seed = 42
@@ -34,9 +34,9 @@ main = let seed = 42
            dat1 = makeData gen (z .:. 10000)
            dat2 = makeData gen (z .:. 125 .:. 80)
            dat3 = makeData gen (z .:. 100 .:. 10 .:. 10)
-           dat1' = makeData gen (z .:.: 10000)
-           dat2' = makeData gen (z .:.: 125 .:.: 80)
-           dat3' = makeData gen (z .:.: 100 .:.: 10 .:.: 10)
+           dat1' = makeData gen (z .:. 10000)
+           dat2' = makeData gen (z .:. 125 .:. 80)
+           dat3' = makeData gen (z .:. 100 .:. 10 .:. 10)
        in do
         putStrLn "Compiling accelerate programs"
         hFlush stdout
@@ -72,9 +72,9 @@ makeData :: (A.Elt k) => StdGen -> [k] -> Vector (k, Float)
 makeData gen ks = let dat = randoms gen
                   in  A.fromList (Z :. length ks) (shuffle gen $ zip ks dat)
 
-infixl 3 .:.:
-(.:.:) :: [key] -> Int -> [key :.: Int]
-(.:.:) = addDimension (:.:)
+infixl 3 .:.
+(.:.) :: [key] -> Int -> [key :. Int]
+(.:.) = addDimension (:.)
 
 infixl 3 .:.
 (.:.) :: [key] -> Int -> [key :. Int]

@@ -44,7 +44,6 @@ library
       Data.Array.Accelerate.Tabular.Rep.Offset
       Data.Array.Accelerate.Tabular.Rep.Range
       Data.Array.Accelerate.Tabular.Rep.Singleton
-      Data.Array.Accelerate.Tabular.Rep.Snoc
       Data.Array.Accelerate.Tabular.Util
   other-modules:
       Paths_accelerate_tabular

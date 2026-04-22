@@ -27,7 +27,7 @@ import Data.Array.Accelerate hiding (Scalar, unit, the)
 import qualified Data.Array.Accelerate as A
 
 import Data.Array.Accelerate.Tabular.Classes.Rep
-import Data.Array.Accelerate.Tabular.Rep.Snoc
+
 import Control.DeepSeq (NFData)
 import Data.Array.Accelerate.Tabular.Util (emptyVector)
 import Data.Kind
@@ -92,4 +92,4 @@ type NotScalarConstruct rep = NotScalar (
 --
 type family NotScalar (msg :: ErrorMessage) rep :: Constraint where
   NotScalar msg Z         = TypeError msg
-  NotScalar _   (_ :.: _) = ()
+  NotScalar _   (_ :. _) = ()

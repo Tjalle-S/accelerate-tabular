@@ -8,7 +8,7 @@ module Data.Array.Accelerate.Tabular (
 
 , Rep
 
-, Z, (:.:) (..)
+, Z, (:.) (..)
 
 -- ** Available level formats
 , Dense
@@ -36,9 +36,11 @@ module Data.Array.Accelerate.Tabular (
 , Fold
 , fold, fold1
 , foldAll, fold1All
+-- *** Describing folds
+, Keep (..), Group (..)
 , FoldDescriptor
 , FoldResult
--- *** Commonly used fold descriptors
+-- **** Commonly used fold descriptors
 , inner, inner1, inner2, inner3
 
 -- ** Reindexing tables
@@ -89,9 +91,9 @@ module Data.Array.Accelerate.Tabular (
 , pattern T7,  pattern T8,  pattern T9,  pattern T10, pattern T11
 , pattern T12, pattern T13, pattern T14, pattern T15, pattern T16
 
--- , pattern Z_, pattern Ix, pattern (::.:), pattern All_, pattern Any_
--- , pattern I0, pattern I1, pattern I2, pattern I3, pattern I4
--- , pattern I5, pattern I6, pattern I7, pattern I8, pattern I9
+, pattern Z_, pattern Ix, pattern (::.){-, pattern All_, pattern Any_ -}
+, pattern I0, pattern I1, pattern I2, pattern I3, pattern I4
+, pattern I5, pattern I6, pattern I7, pattern I8, pattern I9
 
 , pattern Vec2, pattern V2
 , pattern Vec3, pattern V3
@@ -154,7 +156,7 @@ module Data.Array.Accelerate.Tabular (
 , (.), ($), (&), flip, error, undefined, P.id, const, otherwise
 , Show, Generic, HasCallStack
 , fromString -- -XOverloadedStrings
-, fromListN  -- -XOverloadedLists
+-- , fromListN  -- -XOverloadedLists
 
 , type (~)
 

@@ -30,7 +30,6 @@ import qualified Data.Array.Accelerate as A
 import Data.Array.Accelerate.Data.Lens ()
 
 import Data.Array.Accelerate.Tabular.Classes.Rep
-import Data.Array.Accelerate.Tabular.Rep
 import Data.Array.Accelerate.Tabular.Classes.Fold as Fold
 import Data.Array.Accelerate.Tabular.Prelude.Table
 import Data.Array.Accelerate.Tabular.Util
@@ -103,16 +102,16 @@ type NotScalarFold rep = NotScalar (
 
 -- | Reduce the innermost dimension of a table.
 --
-inner, inner1 :: Keep :.: Group
-inner  = Keep :.: Group
+inner, inner1 :: Keep :. Group
+inner  = Keep :. Group
 inner1 = inner
 
 -- | Reduce the 2 innermost dimensions of a table.
 --
-inner2 :: Keep :.: Group :.: Group
-inner2 = inner1 :.: Group
+inner2 :: Keep :. Group :. Group
+inner2 = inner1 :. Group
 
 -- | Reduce the 3 innermost dimensions of a table.
 --
-inner3 :: Keep :.: Group :.: Group :.: Group
-inner3 = inner2 :.: Group
+inner3 :: Keep :. Group :. Group :. Group
+inner3 = inner2 :. Group
