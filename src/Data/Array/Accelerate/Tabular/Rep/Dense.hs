@@ -47,7 +47,7 @@ instance (Rep rep keys, IndexKey key) =>
     let (ks', is)     = splitKeys ks
         T3 met perm n = createMeta ks'
 
-        n'   = 1 + fromKey (the $ maximum is)
+        n'   = 1 + fromKey (the $ fold max (toKey 0) is)
         met' = DenseMeta met (unit n')
 
         perm' = zipWith (\(I1 p) i -> I1 $ toKey $ p * n' + fromKey i) perm is

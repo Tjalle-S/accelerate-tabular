@@ -72,6 +72,8 @@ instance (Rep rep keys, Elt key) =>
         met' = Meta_ $ T2 met (scatter perm' target is)
       in T3 met' perm n
 
+    enumKeys SingletonMeta { met, ks } = zipWithChecked (::.) (enumKeys met) ks
+
 
 instance (Fold rep keys, Elt key) =>
   Fold (rep :. UnsafeCompleteSingleton) (keys :. key) where

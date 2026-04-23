@@ -78,7 +78,7 @@ instance (Rep rep keys, Ord key) =>
           (\(l, m, _) -> l /= m)
           (function $ const undef) -- Boundary does not matter.
           is'
-        flags = mkHeadFlags (shape is) histo
+        flags = mkHeadFlags histo
         flags' = zipWith (||) diff flags -- 1st element of segment always kept.
 
         T2 is'' n' = compact flags' is'
@@ -188,9 +188,11 @@ enumKeysCompressed CompressedMeta { met, seg, ks } =
 
     seg' = stencil (\(l, m, _) -> m - l) (function $ const 0) seg
 
-mkHeadFlags :: Exp DIM1 -> Acc (Segments Int) -> Acc (Vector Bool)
-mkHeadFlags n seg =
-  let offset = map I1 $ prescanl (+) 0 seg
-      falses = fill n False_
-      trues  = fill (shape seg) True_
-  in  permute' (||) falses (map Just_ $ zipChecked offset trues)
+mkHeadFlags :: (HasCallStack) => Acc (Segments Int) -> Acc (Vector Bool)
+mkHeadFlags seg
+  = init
+  $ permute' (||) falses
+  $ map (\o -> Just_ (T2 (I1 o) True_)) offset
+  where
+    T2 offset len = scanl' (+) 0 seg
+    falses        = fill (I1 $ the len + 1) False_

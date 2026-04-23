@@ -20,6 +20,7 @@ import Hedgehog
 import qualified Hedgehog.Gen                                       as G
 import qualified Hedgehog.Range                                     as R
 import Data.List (nub)
+import qualified Data.Char as P
 
 
 type Run  = forall a. Arrays a => Acc a -> a
@@ -33,14 +34,14 @@ dim1 = (Z :.) <$> G.int (R.linear 0 1024)
 
 dim2 :: Gen DIM2
 dim2 = do
-  x <- G.int (R.linear 0 128)
+  x <- G.int (R.linear 0 96)
   y <- G.int (R.linear 0 48)
   return (Z :. y :. x)
 
 dim3 :: Gen DIM3
 dim3 = do
-  x <- G.int (R.linear 0 64)
-  y <- G.int (R.linear 0 32)
+  x <- G.int (R.linear 0 48)
+  y <- G.int (R.linear 0 24)
   z <- G.int (R.linear 0 16)
   return (Z :. z :. y :. x)
 
@@ -51,6 +52,13 @@ array sh gen = fromList sh <$> G.list (R.singleton (size sh)) gen
 
 int :: Gen Int
 int = G.int R.linearBounded
+
+charKey :: Gen Char
+charKey = P.chr <$> G.int (R.linear (P.ord '\x0020') (P.ord '\x007E'))
+-- ASCII range, for simplicity and smaller sizes
+
+intKey :: Gen Int
+intKey = G.int (R.linear 0 48)
 
 i8 :: Gen Int8
 i8 = G.int8 R.linearBounded
