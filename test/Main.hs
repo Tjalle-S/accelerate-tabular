@@ -1,22 +1,12 @@
--- {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE ImpredicativeTypes #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE GADTs #-}
-{-# LANGUAGE TypeOperators #-}
-
-
-import Control.Applicative
-import Control.Monad
-import qualified Prelude as P
-import qualified Data.List as P
+{-# LANGUAGE TypeOperators    #-}
 
 import Test.Tasty
 import Test.Tasty.Hedgehog (testProperty)
 
-
-import Data.Array.Accelerate hiding (size)
 import Data.Array.Accelerate.LLVM.Native (runN)
+
 import Data.Array.Accelerate.Tabular
 import Properties
 import Data.Proxy (Proxy(..))
@@ -24,72 +14,67 @@ import Data.Proxy (Proxy(..))
 import Gen
 
 
-main :: P.IO ()
+main :: IO ()
 main = defaultMain tests
 
 tests :: TestTree
 tests = testGroup "Tests"
   [ testGroup "Create preserves assocs" testsCreatePreservesAssocs
-
+  , testGroup "FoldAll equal to foldr"  testsFoldAll
   ]
 
 testsCreatePreservesAssocs :: [TestTree]
-testsCreatePreservesAssocs = 
-  [ testProperty "Dense / Int" $
-      createPreservesAssocs
-        runN
-        (Proxy @(Z :. Dense))
-        (genAssocs dim1 int)
-  , testProperty "Dense / Char" $
-      createPreservesAssocs
-        runN
-        (Proxy @(Z :. OrdCompressed))
-        (genAssocs char1 int)
-  , testProperty "OrdCompressed / Int" $
-      createPreservesAssocs
-        runN
-        (Proxy @(Z :. OrdCompressed))
-        (genAssocs dim1 int)
-  , testProperty "OrdCompressed / Char" $
-      createPreservesAssocs
-        runN
-        (Proxy @(Z :. OrdCompressed))
-        (genAssocs char1 int)
-  , testProperty "Hashed / Int" $
-      createPreservesAssocs
-        runN
-        (Proxy @(Z :. Hashed))
-        (genAssocs dim1 int)
-  , testProperty "Hashed / Char" $
-      createPreservesAssocs
-        runN
-        (Proxy @(Z :. Hashed))
-        (genAssocs char1 int)
-  , testProperty "Dense2 / Int:.Int" $
-      createPreservesAssocs
-        runN
-        (Proxy @(Z :. Dense :. Dense))
-        (genAssocs dim2 int)
-  , testProperty "Dense2 / Int:.Char" $
-      createPreservesAssocs
-        runN
-        (Proxy @(Z :. Dense :. Dense))
-        (genAssocs ((\a b -> Z :. a :. b) <$> intKey <*> charKey) int)
-  , testProperty "CSR / Int:.Int" $
-      createPreservesAssocs
-        runN
-        (Proxy @(Z :. Dense :. OrdCompressed))
-        (genAssocs dim2 int)
-  , testProperty "COO / Int:.Int" $
-      createPreservesAssocs
-        runN
-        (Proxy @(Z :. NonUniqueCompressed :. UnsafeCompleteSingleton))
-        (genAssocs dim2 int)
-  , testProperty "CSF / Int:.Int:.Int" $
-      createPreservesAssocs
-        runN
-        (Proxy @(Z :. OrdCompressed :. OrdCompressed :. OrdCompressed))
-        (genAssocs dim3 int)
+testsCreatePreservesAssocs =
+  [ makeTest "Dense / Int"          dense      dim1  int
+  , makeTest "Dense / Char"         dense      char1 int
+  , makeTest "OrdCompressed / Int"  compressed dim1  int
+  , makeTest "OrdCompressed / Char" compressed char1 int
+  , makeTest "Hashed / Int"         hashed     dim1  int
+  , makeTest "Hashed / Char"        hashed     char1 int
+  , makeTest "Dense2 / Int:.Int"    dense2     dim2  int
+  , makeTest "Dense2 / Int:.Char"   dense2     char2 int
+  , makeTest "CSR / Int:.Int"       csr        dim2  int
+  , makeTest "COO / Int:.Int"       coo        dim2  int
+  , makeTest "CSF / Int:.Int:.Int"  csf        dim3  int
   ]
   where
     char1 = (Z :.) <$> charKey
+    char2 = (\a b -> Z :. a :. b) <$> intKey <*> charKey
+
+    makeTest name proxy key val = testProperty name $
+      createPreservesAssocs runN proxy (genAssocs key val)
+
+testsFoldAll :: [TestTree]
+testsFoldAll =
+  [ makeTest "Dense / Int"          dense      dim1  int
+  , makeTest "OrdCompressed / Int"  compressed dim1  int
+  , makeTest "Hashed / Int"         hashed     dim1  int
+  , makeTest "Dense2 / Int:.Int"    dense2     dim2  int
+  , makeTest "CSR / Int:.Int"       csr        dim2  int
+  , makeTest "COO / Int:.Int"       coo        dim2  int
+  , makeTest "CSF / Int:.Int:.Int"  csf        dim3  int
+  ]
+  where
+    makeTest name proxy key val = testProperty name $
+      foldAllSameAsFoldr runN proxy (genAssocs key val)
+
+dense :: Proxy (Z :. Dense)
+dense = Proxy
+
+compressed :: Proxy (Z :. OrdCompressed)
+compressed = Proxy
+
+hashed :: Proxy (Z :. Hashed)
+hashed = Proxy
+
+dense2 :: Proxy (Z :. Dense :. Dense)
+dense2 = Proxy
+
+csr :: Proxy (Z :. Dense :. OrdCompressed)
+csr = Proxy
+
+coo :: Proxy (Z :. NonUniqueCompressed :. UnsafeCompleteSingleton)
+coo = Proxy
+
+csf :: Proxy (Z :. OrdCompressed :. OrdCompressed :. OrdCompressed)
+csf = Proxy

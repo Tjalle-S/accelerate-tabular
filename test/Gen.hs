@@ -48,8 +48,6 @@ dim3 = do
 array :: (Shape sh, Elt e) => sh -> Gen e -> Gen (Array sh e)
 array sh gen = fromList sh <$> G.list (R.singleton (size sh)) gen
 
--- table :: (Rep rep key, Elt e) => 
-
 int :: Gen Int
 int = G.int R.linearBounded
 
