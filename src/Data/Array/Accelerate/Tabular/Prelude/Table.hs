@@ -8,9 +8,10 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
-{-# LANGUAGE ConstraintKinds #-}
 
 module Data.Array.Accelerate.Tabular.Prelude.Table (
   Table (..)
@@ -25,6 +26,7 @@ module Data.Array.Accelerate.Tabular.Prelude.Table (
 
 import Data.Array.Accelerate hiding (Scalar, unit, the)
 import qualified Data.Array.Accelerate as A
+import Data.Array.Accelerate.Data.Maybe
 
 import Data.Array.Accelerate.Tabular.Classes.Rep
 
@@ -62,7 +64,8 @@ pattern Table_ { meta_, vals_ } = Pattern (meta_, vals_)
 
 -- | Create an empty table.
 -- 
-emptyTable :: (NotScalarConstruct rep, Rep rep key, Elt val) => Acc (Table rep key val)
+emptyTable :: (NotScalarConstruct rep, Rep rep key, Elt val)
+           => Acc (Table rep key val)
 emptyTable = Table_ {
   meta_ = emptyMeta
 , vals_ = emptyVector

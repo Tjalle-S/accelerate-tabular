@@ -196,6 +196,5 @@ import Data.Array.Accelerate.Tabular.Prelude.Reindex
 import Data.Array.Accelerate.Tabular.Prelude.Table
 import Data.Array.Accelerate.Tabular.Rep
 
-import Data.Array.Accelerate.Tabular.Classes.Rep
 import Data.Array.Accelerate.Tabular.Classes.Index
 import Data.Array.Accelerate.Tabular.Classes.IndexKey
