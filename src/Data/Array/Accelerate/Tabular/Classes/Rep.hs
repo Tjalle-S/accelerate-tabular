@@ -20,7 +20,13 @@ module Data.Array.Accelerate.Tabular.Classes.Rep (
   Rep  (..)
 , Meta (..)
 , pattern Meta_
+
+, AssumeOrd (..)
+
+, isOrderedProxy, isOrderedMeta, IsOrdered
 ) where
+
+import Prelude (type (~))
 
 import Data.Array.Accelerate
 
@@ -30,7 +36,7 @@ import Data.Data
 
 -- | Possible representations for tables with a given key type.
 --
-class (Elt key, Arrays (MetaR rep key)) => Rep rep key where
+class (Elt key, Arrays (MetaR rep key), Typeable (Ordered rep)) => Rep rep key where
 
   -- | The metadata necessary for storing the keys, and associating them with
   -- a vector of values.
@@ -57,8 +63,14 @@ class (Elt key, Arrays (MetaR rep key)) => Rep rep key where
   -- Also computes a mapping from keys to the position in the metadata
   -- of the next level, and the size of this level.
   --
-  createMeta :: Acc (Vector key)
+  createMeta :: AssumeOrd
+             -> Acc (Vector key)
              -> Acc (Meta rep key, Vector DIM1, Scalar Int)
+
+  -- -- | Variant of 'createMeta' that assumes the input vector is already sorted.
+  -- --
+  -- orderedCreateMeta :: Acc (Vector key)
+  --                   -> Acc (Meta rep key, Vector DIM1, Scalar Int)
 
 
   -- | Enumerate all keys in the metadata,
@@ -67,6 +79,13 @@ class (Elt key, Arrays (MetaR rep key)) => Rep rep key where
   -- May contain undefined keys on positions corresponding to a 'Nothing' value.
   --
   enumKeys :: Acc (Meta rep key) -> Acc (Vector key)
+
+  -- zipMeta :: Acc (Meta rep key)
+  --         -> Acc (Meta rep key)
+  --         -> Acc (Meta rep key, Vector (Maybe ()), Vector (Maybe ()))
+
+  -- filterMeta :: Acc (Meta rep key)
+  --            -> Acc ()
 
 
 newtype Meta rep key = Meta (MetaR rep key)
@@ -90,16 +109,28 @@ instance Rep Z Z where
 
   emptyMeta = Meta_ (lift ())
 
-  createMeta ks =
-    let perm = generate (shape ks) (const $ I1 0)
+  createMeta _ ks =
+    let perm = fill (shape ks) (I1 0)
     in  T3 emptyMeta perm (unit 1)
 
-  enumKeys _ = flatten (unit Z_)
+  enumKeys _ = fill (I1 1) Z_
+
+  -- zipMeta _ _ =
+  --   let perm = fill (I1 1) (Just_ $ lift ())
+  --   in  T3 emptyMeta perm perm
 
 
-testOrdered :: forall rep . (Typeable (Ordered rep))
-            => Proxy rep
-            -> Maybe (Ordered rep :~: True)
-testOrdered _ = eqT @(Ordered rep) @True
+
+isOrderedProxy :: forall rep . (Typeable (Ordered rep))
+               => Proxy rep
+               -> Maybe (Ordered rep :~: True)
+isOrderedProxy _ = eqT @(Ordered rep) @True
+
+isOrderedMeta :: forall rep key . (Typeable (Ordered rep))
+              => Acc (Meta rep key)
+              -> Maybe (Ordered rep :~: True)
+isOrderedMeta _ = isOrderedProxy @rep Proxy
 
 type IsOrdered rep = Ordered rep ~ True
+
+data AssumeOrd = AssumeOrdered | NoAssumeOrdered

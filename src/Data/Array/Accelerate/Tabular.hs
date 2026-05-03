@@ -22,7 +22,7 @@ module Data.Array.Accelerate.Tabular (
 
 -- ** Introducing tables
 , emptyTable
-, createTable
+, createTable, orderedCreateTable
 , A.use
 
 -- ** Indexing into tables
@@ -31,6 +31,7 @@ module Data.Array.Accelerate.Tabular (
 , unsafeIndex, (!)
 
 , map
+, filter
 , assocs
 
 -- ** Folding over tables
@@ -182,7 +183,7 @@ import Prelude (type (~))
 import qualified Prelude as P
 
 import Data.Array.Accelerate hiding (
-    map
+    map, filter
   , fold, fold1, foldAll, fold1All
   , (!)
   , Scalar, unit, the

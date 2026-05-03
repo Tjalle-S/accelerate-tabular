@@ -3,14 +3,15 @@
 {-# LANGUAGE TypeOperators     #-}
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Data.Array.Accelerate.Tabular.Util (
   emptyVector, splitKeys
 , rotateLeft, rotateRight
-, fst3, snd3, thd3
 , comparing
 , histogram
 , combineMaybe
+, singleton
 ) where
 
 import Data.Array.Accelerate
@@ -55,23 +56,6 @@ rotateLeft r xs = backpermute
 rotateRight :: (Elt a) => Exp Int -> Acc (Vector a) -> Acc (Vector a)
 rotateRight r = rotateLeft (- r)
 
-
--- | Extract the first element of a 3-tuple.
---
-fst3 :: (Elt a, Elt b, Elt c) => Exp (a, b, c) -> Exp a
-fst3 (T3 x _ _) = x
-
--- | Extract the second element of a 3-tuple.
---
-snd3 :: (Elt a, Elt b, Elt c) => Exp (a, b, c) -> Exp b
-snd3 (T3 _ y _) = y
-
--- | Extract the third element of a 3-tuple.
---
-thd3 :: (Elt a, Elt b, Elt c) => Exp (a, b, c) -> Exp c
-thd3 (T3 _ _ z) = z
-
-
 -- |
 -- > comparing p x y = compare (p x) (p y)
 --
@@ -110,3 +94,17 @@ combineMaybe f mx my = T2 mx my & match \case
 --
 unindex :: (Elt a, Elt b) => Exp (a :. b) -> Exp (a, b)
 unindex (x ::. y) = T2 x y
+
+-- | Create a single-element array of any dimensionality.
+--
+singleton :: (Unit sh, Elt a) => Exp a -> Acc (Array sh a)
+singleton = reshape indexUnit . unit
+
+class (Shape sh) => Unit sh where
+  indexUnit :: Exp sh
+
+instance Unit Z where
+  indexUnit = Z_
+
+instance (Unit sh) => Unit (sh :. Int) where
+  indexUnit = indexUnit ::. 1

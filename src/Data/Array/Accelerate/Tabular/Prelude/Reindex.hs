@@ -61,7 +61,7 @@ reindex combv mapk Table_ { meta_, vals_ } =
                      (\k v -> maybe Nothing_ (Just_ . T2 k) v)
                      (enumKeys meta_)
                      vals_
-      T3 met perm n = createMeta ks'
+      T3 met perm n = createMeta NoAssumeOrdered ks'
       vals' = permute'
         (combineMaybe combv)
         (fill (I1 $ the n) Nothing_)

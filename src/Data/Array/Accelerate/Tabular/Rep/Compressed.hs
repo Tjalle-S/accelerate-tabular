@@ -11,6 +11,9 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 
+-- {-# OPTIONS_GHC -Wno-missing-signatures #-}
+-- {-# OPTIONS_GHC -Wmissing-exported-signatures #-}
+
 module Data.Array.Accelerate.Tabular.Rep.Compressed (
   Compressed
 , OrdCompressed
@@ -31,6 +34,10 @@ import Data.Array.Accelerate.Unsafe (undef)
 import Data.Array.Accelerate.Tabular.Classes.Fold
 
 import Prelude (id)
+
+import Lens.Micro
+import Lens.Micro.Extras
+import Data.Array.Accelerate.Data.Lens ()
 
 -- | Stores only keys present in the table, in a segmented vector.
 --
@@ -62,15 +69,20 @@ instance (Rep rep keys, Ord key) =>
 
   type MetaR (rep :. OrdCompressed) (keys :. key) = CompressedMetaR rep keys key
 
+  type Ordered (rep :. OrdCompressed) = Ordered rep
+
   emptyMeta = emptyCompressed
 
-  createMeta ks =
+  createMeta o ks =
     let (ks', is)     = splitKeys ks
-        T3 met perm n = createMeta ks'
+        T3 met perm n = createMeta o ks'
 
-        (_, is', perm') = unzip3
-          $ sortBy (comparing fst3 <> comparing snd3)
-          $ zipChecked3 perm is (enumFromN (shape is) 0)
+        (_, is', perm') = case (o, isOrderedMeta met) of
+          -- First result is ignored, so undefined is fine here.
+          (AssumeOrdered, Just Refl) -> (undefined, is, enumFromN (shape is) 0)
+          _                          -> unzip3
+            $ sortBy (comparing (view _1) <> comparing (view _2))
+            $ zipChecked3 perm is (enumFromN (shape is) 0)
 
         histo = histogram (I1 $ the n) perm
 
@@ -89,6 +101,8 @@ instance (Rep rep keys, Ord key) =>
 
         met' = CompressedMeta met (scanl1 (+) segSizes) is''
     in  T3 met' (scatter perm' (fill (shape perm') undef) perm'') n'
+
+  -- orderedCreateMeta = createOrdCompressedMeta True orderedCreateMeta
 
   enumKeys = enumKeysCompressed
 
@@ -110,13 +124,15 @@ instance (Rep rep keys, Ord key) =>
 
   emptyMeta = emptyCompressed
 
-  createMeta ks = 
+  createMeta o ks = 
     let (ks', is)     = splitKeys ks
-        T3 met perm n = createMeta ks'
+        T3 met perm n = createMeta o ks'
 
-        (_, is', perm') = unzip3 
-          $ sortBy (comparing fst3) 
-          $ zipChecked3 perm is (generate (shape is) id) 
+        (_, is', perm') = case (o, isOrderedMeta met) of
+          (AssumeOrdered, Just Refl) -> (undefined, is, generate (shape is) id)
+          _                          -> unzip3
+            $ sortBy (comparing $ view _1) 
+            $ zipChecked3 perm is (generate (shape is) id) 
 
 
         histo = histogram (I1 $ the n) perm
@@ -196,3 +212,31 @@ mkHeadFlags seg
   where
     T2 offset len = scanl' (+) 0 seg
     falses        = fill (I1 $ the len + 1) False_
+
+-- createOrdCompressedMeta b f ks =
+--   let (ks', is)     = splitKeys ks
+--       T3 met perm n = f ks'
+
+--       (_, is', perm') = case (b, isOrderedMeta met) of
+--         (True, Just Refl) -> (undefined, is, enumFromN (shape is) 0)
+--         _                 -> unzip3
+--           $ sortBy (comparing (view _1) <> comparing (view _2))
+--           $ zipChecked3 perm is (enumFromN (shape is) 0)
+
+--       histo = histogram (I1 $ the n) perm
+
+--       diff = stencil
+--         (\(l, m, _) -> l /= m)
+--         (function $ const undef) -- Boundary does not matter.
+--         is'
+--       flags = mkHeadFlags histo
+--       flags' = zipWith (||) diff flags -- 1st element of segment always kept.
+
+--       T2 is'' n' = compact flags' is'
+
+--       segSizes = foldSeg (+) 0 (map boolToInt flags') histo
+
+--       perm'' = map (I1 . subtract 1) (scanl1 (+) (map boolToInt flags'))
+
+--       met' = CompressedMeta met (scanl1 (+) segSizes) is''
+--   in  T3 met' (scatter perm' (fill (shape perm') undef) perm'') n'

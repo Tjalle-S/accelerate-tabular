@@ -12,7 +12,7 @@ module Main (main) where
 
 import qualified Prelude
 
-import Data.Array.Accelerate (zip, zipWith, foldSeg, zipWith3)
+import Data.Array.Accelerate (zip, zipWith, foldSeg, zipWith3, inspectCompiler)
 import Data.Array.Accelerate.LLVM.Native
 import Data.Array.Accelerate.Tabular.Rep
 import Data.Array.Accelerate.Tabular.Classes.Rep
@@ -20,6 +20,9 @@ import Data.Array.Accelerate.Tabular
 import Data.Array.Accelerate.Tabular.Classes.Fold
 import Data.Array.Accelerate.Tabular.Prelude.Table
 import Data.Proxy (Proxy (Proxy))
+
+import qualified Data.Array.Accelerate.Tabular.Prelude.Zip as Z
+-- import Data.Array.Accelerate.Tabular.Classes.Rep (Rep(orderedCreateMeta))
 
 type I2 = Z :. Int :. Int
 type D2 = Z :. Dense :. Dense
@@ -42,15 +45,21 @@ main :: Prelude.IO ()
 main = let 
           --  vs = [1.0, 3.0, 5.0, 7.0]
 
-           d1s = [2,   2,    2,    1,   1,   8,   24]
-           d2s = [3,   1,    0,    4,   1,   5,   3]
-           d3s = [1,   2,    2,    3,   4,   5,   6]
-           vs  = [2.3, 21.1, 12.0, 1.4, 5.1, 8.5, 24.3]
+          --  d1s = [2,   2,    2,    1,   1,   8,   24]
+          --  d2s = [3,   1,    0,    4,   1,   5,   3]
+          --  d3s = [1,   2,    2,    3,   4,   5,   6]
+          --  vs  = [2.3, 21.1, 12.0, 1.4, 5.1, 8.5, 24.3]
+           vs  = [2, 21, 12, 1, 5, 8, 24]
 
-           ks = zipWith3 (\d1 d2 d3 -> Z_ ::. d1 ::. d2 ::. d3) (use d1s) (use d2s) (use d3s)
-           kvs = zip ks (use vs)
+          --  ks = zipWith3 (\d1 d2 d3 -> Z_ ::. d1 ::. d2 ::. d3) (use d1s) (use d2s) (use d3s)
+           ks = [Z :. 2, Z:.21, Z:.12, Z:.1, Z:.5, Z:.8, Z:.24]
+           kvs = zip (use ks) (use vs)
 
-           vec = fold (Keep :. Group :. Group) (+) 0 $ createTable @CSF3 @I3 @Float $ kvs
+        --    vec = fold (Keep :. Group :. Group) (+) 0 $ createTable @CSF3 @I3 @Float $ kvs
+
+          -- tab1 = createTable @(Z :. Dense) @(Z :. Int) @Float $ zip (use [Z :. 1, Z :. 2]) (use [1.0, 2.0])
+        -- tab2 = createTable @(Z :. Dense) @(Z :. Int) @Float $ zip (use [Z :. 2, Z :. 3]) (use [2.0, 3.0])
 
 
-       in  Prelude.print $ run vec
+       in  Prelude.putStrLn $ inspectCompiler @Native
+                              $ filter @Sparse (const even) $ createTable @Sparse @I1 @Int $ kvs

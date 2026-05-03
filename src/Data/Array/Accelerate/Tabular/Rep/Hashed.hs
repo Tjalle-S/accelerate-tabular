@@ -53,10 +53,10 @@ instance (Rep rep keys, Eq key, Hashable key) =>
 
   emptyMeta = HashedMeta emptyMeta (emptyHashSet 0 0)
 
-  createMeta ks =
+  createMeta o ks =
     let
       (ks', is) = splitKeys ks
-      T3 met perm n = createMeta ks'
+      T3 met perm n = createMeta o ks'
 
       w = the $ maximum $ histogram (I1 $ the n) perm
       -- TODO: maybe need multiple variations:

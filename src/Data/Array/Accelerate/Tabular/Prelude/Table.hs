@@ -18,7 +18,7 @@ module Data.Array.Accelerate.Tabular.Prelude.Table (
 , Scalar
 -- , type NotScalar
 , pattern Table_, meta_, vals_
-, emptyTable, createTable
+, emptyTable, createTable', createTable, orderedCreateTable
 
 , NotScalarConstruct
 , NotScalar
@@ -71,20 +71,36 @@ emptyTable = Table_ {
 , vals_ = emptyVector
 }
 
--- | Construct a new table from the given keys and values.
---
-createTable :: (NotScalarConstruct rep, Rep rep key, Elt val)
-            => Acc (Vector (key, val))
-            -> Acc (Table rep key val)
-createTable kvs = 
+createTable' :: (NotScalarConstruct rep, Rep rep key, Elt val)
+             => AssumeOrd
+             -> Acc (Vector (key, val))
+             -> Acc (Table rep key val)
+createTable' o kvs = 
   let (ks, vs)      = unzip kvs
-      T3 met perm n = createMeta ks
+      T3 met perm n = createMeta o ks
 
       perm'  = map unindex1 perm
       target = fill (I1 $ A.the n) Nothing_
       vs'    = map Just_ vs
 
   in  Table_ met (scatter perm' target vs')
+
+-- | Construct a new table from the given keys and values.
+--
+createTable :: (NotScalarConstruct rep, Rep rep key, Elt val)
+            => Acc (Vector (key, val))
+            -> Acc (Table rep key val)
+createTable = createTable' NoAssumeOrdered
+
+-- | Variant of 'createTable' that assumes the input is already ordered by key.
+-- 
+-- It will be more efficient for most representations that require ordering, 
+-- but do not support O(1) indexing.
+--
+orderedCreateTable :: (NotScalarConstruct rep, Rep rep key, Elt val)
+                   => Acc (Vector (key, val))
+                   -> Acc (Table rep key val)
+orderedCreateTable = createTable' AssumeOrdered
 
 type NotScalarConstruct rep = NotScalar (
        Text "Scalar tables (Table Z Z val) can not be created manually."

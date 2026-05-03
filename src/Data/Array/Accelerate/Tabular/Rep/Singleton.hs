@@ -59,12 +59,14 @@ instance (Rep rep keys, Elt key) =>
     type MetaR (rep :. UnsafeCompleteSingleton) (keys :. key) =
       (Meta rep keys, Vector key)
 
+    type Ordered (rep :. UnsafeCompleteSingleton) = Ordered rep
+
     emptyMeta = Meta_ $ T2 emptyMeta emptyVector
 
-    createMeta ks =
+    createMeta o ks =
       let
         (ks', is)     = splitKeys ks
-        T3 met perm n = createMeta ks'
+        T3 met perm n = createMeta o ks'
 
         perm' = map unindex1 perm
         target = fill (I1 $ the n) undef
