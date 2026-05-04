@@ -58,8 +58,6 @@ instance (Rep rep keys, IndexKey key) =>
         perm' = zipWith (\(I1 p) i -> I1 $ toKey $ p * n' + fromKey i) perm is
     in  T3 met' perm' (zipWith (*) n (unit n'))
 
-  -- orderedCreateMeta = createDenseMeta orderedCreateMeta
-
   enumKeys DenseMeta { met, n } = expand
     (const $ the n)
     (\k i -> k ::. toKey i)
@@ -125,22 +123,3 @@ pattern DenseMeta :: (Arrays (Meta rep keys), Elt key)
               -> Acc (Meta (rep :. Dense) (keys :. key))
 pattern DenseMeta { met, n } = Meta_ (T2 met n)
 {-# COMPLETE DenseMeta #-}
-
--- createDenseMeta :: (Rep rep keys1, Elt keys2, Elt key, IndexKey a, IndexKey x0)
---                 => (  Acc (Vector keys2)
---                    -> Acc (Meta rep keys1, Vector DIM1, Scalar Int)
---                    )
---                 -> Acc (Vector (keys2 :. a))
---                 -> Acc ( Meta (rep :. Dense) (keys1 :. key)
---                        , Vector (Z :. x0)
---                        , Scalar Int
---                        )
--- createDenseMeta f ks =
---   let (ks', is)     = splitKeys ks
---       T3 met perm n = f ks'
-
---       n'   = 1 + fromKey (the $ fold max (toKey 0) is)
---       met' = DenseMeta met (unit n')
-
---       perm' = zipWith (\(I1 p) i -> I1 $ toKey $ p * n' + fromKey i) perm is
---   in  T3 met' perm' (zipWith (*) n (unit n'))

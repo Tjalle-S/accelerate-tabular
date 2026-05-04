@@ -212,31 +212,3 @@ mkHeadFlags seg
   where
     T2 offset len = scanl' (+) 0 seg
     falses        = fill (I1 $ the len + 1) False_
-
--- createOrdCompressedMeta b f ks =
---   let (ks', is)     = splitKeys ks
---       T3 met perm n = f ks'
-
---       (_, is', perm') = case (b, isOrderedMeta met) of
---         (True, Just Refl) -> (undefined, is, enumFromN (shape is) 0)
---         _                 -> unzip3
---           $ sortBy (comparing (view _1) <> comparing (view _2))
---           $ zipChecked3 perm is (enumFromN (shape is) 0)
-
---       histo = histogram (I1 $ the n) perm
-
---       diff = stencil
---         (\(l, m, _) -> l /= m)
---         (function $ const undef) -- Boundary does not matter.
---         is'
---       flags = mkHeadFlags histo
---       flags' = zipWith (||) diff flags -- 1st element of segment always kept.
-
---       T2 is'' n' = compact flags' is'
-
---       segSizes = foldSeg (+) 0 (map boolToInt flags') histo
-
---       perm'' = map (I1 . subtract 1) (scanl1 (+) (map boolToInt flags'))
-
---       met' = CompressedMeta met (scanl1 (+) segSizes) is''
---   in  T3 met' (scatter perm' (fill (shape perm') undef) perm'') n'

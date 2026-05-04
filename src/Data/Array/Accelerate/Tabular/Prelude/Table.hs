@@ -16,7 +16,7 @@
 module Data.Array.Accelerate.Tabular.Prelude.Table (
   Table (..)
 , Scalar
--- , type NotScalar
+
 , pattern Table_, meta_, vals_
 , emptyTable, createTable', createTable, orderedCreateTable
 

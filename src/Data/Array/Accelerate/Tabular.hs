@@ -38,6 +38,11 @@ module Data.Array.Accelerate.Tabular (
 , Fold
 , fold, fold1
 , foldAll, fold1All
+-- *** Non-commutative folds.
+-- If the order in which keys are stored in phyical memory is predictable,
+-- folds with non-commutative combination functions can be used as well.
+-- These may however be less efficient than using a commutative fold.
+, foldNonCommutative
 -- *** Describing folds
 , Keep (..), Group (..)
 , FoldDescriptor
@@ -191,10 +196,6 @@ import Data.Array.Accelerate hiding (
 import qualified Data.Array.Accelerate as A
 
 import Data.Array.Accelerate.Tabular.Prelude
-import Data.Array.Accelerate.Tabular.Prelude.Fold
-import Data.Array.Accelerate.Tabular.Prelude.Index
-import Data.Array.Accelerate.Tabular.Prelude.Reindex
-import Data.Array.Accelerate.Tabular.Prelude.Table
 import Data.Array.Accelerate.Tabular.Rep
 
 import Data.Array.Accelerate.Tabular.Classes.Index

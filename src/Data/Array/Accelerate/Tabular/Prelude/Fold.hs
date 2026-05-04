@@ -17,6 +17,8 @@ module Data.Array.Accelerate.Tabular.Prelude.Fold (
   fold, fold1
 , foldAll, fold1All
 
+, foldNonCommutative
+
 , inner, inner1, inner2, inner3
 
 , NotScalarFold
@@ -87,6 +89,22 @@ fold1All :: (NotScalarFold rep, Rep rep key, Elt val)
 fold1All f Table_ { vals_ } = 
   let res = A.fold1 (combineMaybe f) vals_
   in  Table_ emptyMeta (flatten res)
+
+-- | Variant of 'fold' that supports non-commutative combination functions.
+-- Can only be used if the order of keys in the table is predictable.
+--
+foldNonCommutative :: ( NotScalarFold rep
+                      , IsOrdered rep
+                      , Fold rep key
+                      , Elt val
+                      , FoldDescriptor rep key desc
+                      )
+                   => desc
+                   -> (Exp val -> Exp val -> Exp val)
+                   -> Exp val
+                   -> Acc (Table rep key val)
+                   -> Acc (Table (FoldResult rep desc) (FoldResult key desc) val)
+foldNonCommutative = fold
 
 -- Ideally, this would be a warning rather than an error, since
 -- it will work correctly in all cases, giving the same results as id.

@@ -67,12 +67,6 @@ class (Elt key, Arrays (MetaR rep key), Typeable (Ordered rep)) => Rep rep key w
              -> Acc (Vector key)
              -> Acc (Meta rep key, Vector DIM1, Scalar Int)
 
-  -- -- | Variant of 'createMeta' that assumes the input vector is already sorted.
-  -- --
-  -- orderedCreateMeta :: Acc (Vector key)
-  --                   -> Acc (Meta rep key, Vector DIM1, Scalar Int)
-
-
   -- | Enumerate all keys in the metadata,
   -- producing a list of the same length as the values array.
   -- 
@@ -80,12 +74,9 @@ class (Elt key, Arrays (MetaR rep key), Typeable (Ordered rep)) => Rep rep key w
   --
   enumKeys :: Acc (Meta rep key) -> Acc (Vector key)
 
-  -- zipMeta :: Acc (Meta rep key)
-  --         -> Acc (Meta rep key)
-  --         -> Acc (Meta rep key, Vector (Maybe ()), Vector (Maybe ()))
-
-  -- filterMeta :: Acc (Meta rep key)
-  --            -> Acc ()
+  zipMeta :: Acc (Meta rep key)
+          -> Acc (Meta rep key)
+          -> Acc (Meta rep key, Vector (Maybe ()), Vector (Maybe ()))
 
 
 newtype Meta rep key = Meta (MetaR rep key)
@@ -105,7 +96,7 @@ instance Rep Z Z where
 
   type MetaR Z Z = ()
 
-  type Ordered Z = 'True
+  type Ordered Z = True
 
   emptyMeta = Meta_ (lift ())
 
@@ -133,4 +124,6 @@ isOrderedMeta _ = isOrderedProxy @rep Proxy
 
 type IsOrdered rep = Ordered rep ~ True
 
+-- | Whether or not a function may assume the input is already sorted.
+--
 data AssumeOrd = AssumeOrdered | NoAssumeOrdered
