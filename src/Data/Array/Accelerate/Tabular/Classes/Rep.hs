@@ -15,28 +15,21 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Data.Array.Accelerate.Tabular.Classes.Rep (
-  Rep  (..)
-, Meta (..)
-, pattern Meta_
-
-, AssumeOrd (..)
-
-, isOrderedProxy, isOrderedMeta, IsOrdered
+  module Data.Array.Accelerate.Tabular.Classes.Rep
 ) where
-
-import Prelude (type (~))
 
 import Data.Array.Accelerate
 
 import Control.DeepSeq (NFData)
 import Type.Reflection
-import Data.Data
+import Data.Array.Accelerate.Tabular.Rep.GenProperties (genProperties)
 
 -- | Possible representations for tables with a given key type.
 --
-class (Elt key, Arrays (MetaR rep key), Typeable (Ordered rep)) => Rep rep key where
+class (Elt key, Arrays (MetaR rep key), Typeable (Ordered rep), Typeable (FastIndex rep)) => Rep rep key where
 
   -- | The metadata necessary for storing the keys, and associating them with
   -- a vector of values.
@@ -50,6 +43,11 @@ class (Elt key, Arrays (MetaR rep key), Typeable (Ordered rep)) => Rep rep key w
   --
   type Ordered rep :: Bool
   type Ordered rep = False -- Conservatively assume it is not.
+
+  -- | Whether or not the representation supports efficient indexing.
+  --
+  type FastIndex rep :: Bool
+  type FastIndex rep = False
 
 
   -- Construction
@@ -73,11 +71,6 @@ class (Elt key, Arrays (MetaR rep key), Typeable (Ordered rep)) => Rep rep key w
   -- May contain undefined keys on positions corresponding to a 'Nothing' value.
   --
   enumKeys :: Acc (Meta rep key) -> Acc (Vector key)
-
-  zipMeta :: Acc (Meta rep key)
-          -> Acc (Meta rep key)
-          -> Acc (Meta rep key, Vector (Maybe ()), Vector (Maybe ()))
-
 
 newtype Meta rep key = Meta (MetaR rep key)
   deriving (Generic)
@@ -106,24 +99,8 @@ instance Rep Z Z where
 
   enumKeys _ = fill (I1 1) Z_
 
-  -- zipMeta _ _ =
-  --   let perm = fill (I1 1) (Just_ $ lift ())
-  --   in  T3 emptyMeta perm perm
-
-
-
-isOrderedProxy :: forall rep . (Typeable (Ordered rep))
-               => Proxy rep
-               -> Maybe (Ordered rep :~: True)
-isOrderedProxy _ = eqT @(Ordered rep) @True
-
-isOrderedMeta :: forall rep key . (Typeable (Ordered rep))
-              => Acc (Meta rep key)
-              -> Maybe (Ordered rep :~: True)
-isOrderedMeta _ = isOrderedProxy @rep Proxy
-
-type IsOrdered rep = Ordered rep ~ True
-
 -- | Whether or not a function may assume the input is already sorted.
 --
 data AssumeOrd = AssumeOrdered | NoAssumeOrdered
+
+genProperties [''Ordered, ''FastIndex]

@@ -45,6 +45,7 @@ instance (Rep rep keys, IndexKey key) =>
   type MetaR (rep :. Dense) (keys :. key) = (Meta rep keys, Scalar Int)
 
   type Ordered (rep :. Dense) = Ordered rep
+  type FastIndex (rep :. Dense) = FastIndex rep
 
   emptyMeta = DenseMeta emptyMeta (unit $ toKey 0)
 
@@ -62,24 +63,6 @@ instance (Rep rep keys, IndexKey key) =>
     (const $ the n)
     (\k i -> k ::. toKey i)
     (enumKeys met)
-
-
-
-  -- zipMeta xs ys =
-  --   let T3 met' pxs pys = zipMeta (met xs) (met ys)
-        
-  --       n' = zipWith min (n xs) (n ys)
-
-  --       pxs'  = getFlags (n xs) n' pxs
-  --       pys'  = getFlags (n ys) n' pys
-  --       met'' = DenseMeta met' n'
-  --   in  T3 met'' pxs' pys'
-  --   where
-  --     getFlags n n' flags = expand
-  --       (const $ the n)
-  --       const
-  --       (imap (\(I1 i) p -> i >= the n' ? (Nothing_, p)) flags)
-
 
 instance (Index rep keys, IndexKey key) =>
   Index (rep :. Dense) (keys :. key) where

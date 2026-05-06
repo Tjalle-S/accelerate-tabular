@@ -28,6 +28,7 @@ dependencies:
 - hashable-accelerate
 - deepseq
 - microlens >= 0.5.0.0 && < 0.6
+- template-haskell >=2.19 && < 2.20
 
 ghc-options:
 - -Wall
