@@ -11,7 +11,6 @@
 
 module Data.Array.Accelerate.Tabular.Prelude (
   the, unit
-, assocs
 , indexed
 , filter
 
@@ -24,6 +23,7 @@ import Data.Array.Accelerate.Data.Functor
 import Data.Array.Accelerate.Data.Maybe
 
 import Data.Array.Accelerate.Tabular.Classes.Rep
+import Data.Array.Accelerate.Tabular.Prelude.Assocs  as Tabular.Prelude
 import Data.Array.Accelerate.Tabular.Prelude.Fold    as Tabular.Prelude
 import Data.Array.Accelerate.Tabular.Prelude.Index   as Tabular.Prelude
 import Data.Array.Accelerate.Tabular.Prelude.Map     as Tabular.Prelude
@@ -42,23 +42,6 @@ unit x = Table_ emptyMeta $ singleton (Just_ x)
 --
 the :: (Elt val) => Acc (Scalar val) -> Exp val
 the = (! Z_) -- Assuming a Scalar table always contains exactly one value.
-
--- | Return the key-value pairs present in a table.
---
-assocs :: (Rep rep key, Elt val)
-       => Acc (Table rep key val)
-       -> Acc (Vector (key, val))
-assocs = afst . justs . massocs
-
--- | Return the unfiltered key-value pairs present in a table.
---
-massocs :: (Rep rep key, Elt val)
-        => Acc (Table rep key val)
-        -> Acc (Vector (Maybe (key, val)))
-massocs Table_ { meta_, vals_ } = A.zipWith
-  (\k v -> T2 k <$> v)
-  (enumKeys meta_)
-  vals_
 
 -- | Pair each element of a table with its key.
 --

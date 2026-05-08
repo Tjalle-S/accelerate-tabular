@@ -43,17 +43,17 @@ data UnsafeCompleteSingleton
 -- Singleton instances.
 -- --------------------
 
-instance (Rep rep keys, Elt key) => Rep (rep :. Singleton) (keys :. key) where
+-- instance (Rep rep keys, Elt key) => Rep (rep :. Singleton) (keys :. key) where
 
-  type MetaR (rep :. Singleton) (keys :. key) = (Meta rep keys, Vector key)
+--   type MetaR (rep :. Singleton) (keys :. key) = (Meta rep keys, Vector key)
 
-  emptyMeta = SingletonMeta emptyMeta emptyVector
+--   emptyMeta = SingletonMeta emptyMeta emptyVector
 
 
 -- Unsafe Singleton instances.
 -- ---------------------------
 
-instance (Rep rep keys, Elt key) =>
+instance (Rep rep keys, Eq key) =>
   Rep (rep :. UnsafeCompleteSingleton) (keys :. key) where
 
     type MetaR (rep :. UnsafeCompleteSingleton) (keys :. key) =
@@ -77,7 +77,7 @@ instance (Rep rep keys, Elt key) =>
     enumKeys SingletonMeta { met, ks } = zipWithChecked (::.) (enumKeys met) ks
 
 
-instance (Fold rep keys, Elt key) =>
+instance (Fold rep keys, Eq key) =>
   Fold (rep :. UnsafeCompleteSingleton) (keys :. key) where
 
   foldMeta d dmet@SingletonMeta { met } =

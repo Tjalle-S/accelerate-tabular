@@ -26,9 +26,9 @@ module Data.Array.Accelerate.Tabular (
 , A.use
 
 -- ** Indexing into tables
-, Index, IndexKey
-, index, (!?)
-, unsafeIndex, (!)
+, IndexKey
+, index, (!?), indexMany
+, unsafeIndex, (!), unsafeIndexMany
 
 , map
 , filter
@@ -198,5 +198,5 @@ import qualified Data.Array.Accelerate as A
 import Data.Array.Accelerate.Tabular.Prelude
 import Data.Array.Accelerate.Tabular.Rep
 
-import Data.Array.Accelerate.Tabular.Classes.Index
+-- import Data.Array.Accelerate.Tabular.Classes.Index
 import Data.Array.Accelerate.Tabular.Classes.IndexKey

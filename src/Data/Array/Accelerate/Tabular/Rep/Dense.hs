@@ -9,9 +9,8 @@
 
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
-
--- {-# OPTIONS_GHC -Wno-missing-signatures #-}
--- {-# OPTIONS_GHC -Wmissing-exported-signatures #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Data.Array.Accelerate.Tabular.Rep.Dense (
   Dense
@@ -21,12 +20,11 @@ import Data.Array.Accelerate
 import Data.Array.Accelerate.Data.Functor
 
 import Data.Array.Accelerate.Tabular.Classes.Rep
-import Data.Array.Accelerate.Tabular.Classes.Index
 
 import Data.Array.Accelerate.Tabular.Classes.IndexKey
 import Data.Array.Accelerate.Tabular.Util
 import Data.Array.Accelerate.Tabular.Classes.Fold
-import Data.Array.Accelerate.Data.Maybe
+import Data.Typeable
 
 -- | All keys on this level are present, and the associated values are 
 -- explicitly stored.
@@ -44,8 +42,14 @@ instance (Rep rep keys, IndexKey key) =>
 
   type MetaR (rep :. Dense) (keys :. key) = (Meta rep keys, Scalar Int)
 
-  type Ordered (rep :. Dense) = Ordered rep
+  type Ordered   (rep :. Dense) = Ordered   rep
   type FastIndex (rep :. Dense) = FastIndex rep
+
+  getIndexConstraint _ _ =
+    case getIndexConstraint (Proxy @rep) (Proxy @keys) of
+      NoDict -> NoDict
+      Dict   -> Dict
+    
 
   emptyMeta = DenseMeta emptyMeta (unit $ toKey 0)
 
@@ -64,8 +68,8 @@ instance (Rep rep keys, IndexKey key) =>
     (\k i -> k ::. toKey i)
     (enumKeys met)
 
-instance (Index rep keys, IndexKey key) =>
-  Index (rep :. Dense) (keys :. key) where
+
+instance (Index rep keys, IndexKey key) => Index (rep :. Dense) (keys :. key) where
 
   unsafeToLinearIndex DenseMeta { met, n } (k ::. i) =
     fromKey (the n) * unsafeToLinearIndex met k + fromKey i
@@ -74,6 +78,20 @@ instance (Index rep keys, IndexKey key) =>
     if i >= toKey 0 && fromKey i < the n
       then fmap (\i' -> fromKey (the n) * i' + fromKey i) (toLinearIndex met k)
       else Nothing_
+
+  unsafeToLinearIndices DenseMeta { met, n } ks = 
+    let (ks', is) = splitKeys ks
+    in  zipWithChecked (\i k -> fromKey (the n) * i + fromKey k)
+        (unsafeToLinearIndices met ks')
+        is
+    
+  toLinearIndices DenseMeta { met, n } ks =
+    let (ks', is) = splitKeys ks
+    in  zipWithChecked f (toLinearIndices met ks') is
+    where
+      f i k = if k >= toKey 0 && fromKey k < the n
+                 then fmap (\i' -> fromKey (the n) * i' + fromKey k) i
+                 else Nothing_
 
 
 instance (Fold rep keys, IndexKey key) =>

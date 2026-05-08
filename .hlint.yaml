@@ -1,0 +1,3 @@
+# head does not exist in Accelerate.
+- ignore:
+  name: Use head

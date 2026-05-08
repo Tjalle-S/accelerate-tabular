@@ -32,9 +32,13 @@ import Data.Array.Accelerate.Tabular.Classes.Rep
 
 import Data.Array.Accelerate.Tabular.Util
 import Data.Array.Accelerate.Data.Hashable (Hashable(hash))
-import Data.Array.Accelerate.Data.Maybe (maybe)
+import Data.Array.Accelerate.Data.Maybe
 import Data.Array.Accelerate.Tabular.Classes.Fold
 import Data.Array.Accelerate.Unsafe (undef)
+
+import Data.Typeable
+import Data.Array.Accelerate.Data.Functor
+import Data.Array.Accelerate.Control.Monad
 
 data HashStatus = Todo | Done
   deriving (Generic, Elt, Show)
@@ -50,6 +54,16 @@ instance (Rep rep keys, Eq key, Hashable key) =>
 
   type MetaR (rep :. Hashed) (keys :. key) =
     (Meta rep keys, HashSet key)
+
+  -- In this particular case, indexing is not particularly fast.
+  -- However, in general, any hashing-based container should support fast indexing.
+  type FastIndex (rep :. Hashed) = FastIndex rep
+
+  getIndexConstraint _ _ =
+    case getIndexConstraint (Proxy @rep) (Proxy @keys) of
+      NoDict -> NoDict
+      Dict   -> Dict
+
 
   emptyMeta = HashedMeta emptyMeta (emptyHashSet 0 0)
 
@@ -76,6 +90,18 @@ instance (Rep rep keys, Eq key, Hashable key) =>
     (const $ the $ width hset)
     (\k i -> maybe undef (k ::.) (keys hset !! i))
     (enumKeys met)
+
+
+instance (Index rep keys, Eq key, Hashable key) =>
+  (Index (rep :. Hashed) (keys :. key)) where
+
+  toLinearIndices HashedMeta { met, hset } keys =
+    let (ks, is) = splitKeys keys
+        is'      = toLinearIndices met ks
+    in zipWithChecked (\k mb -> lookup hset k =<< mb) is is'
+  
+  unsafeToLinearIndices = error "todo"
+
 
 
 instance (Fold rep keys, Eq key, Hashable key) =>
@@ -130,6 +156,13 @@ emptyHashSet :: (Elt key) => Exp Int -> Exp Int -> Acc (HashSet key)
 emptyHashSet n w =
   let ks = fill (I1 $ n * w) Nothing_
   in  HashSet ks (unit w)
+
+lookup :: (Eq key, Hashable key)
+       => Acc (HashSet key)
+       -> Exp key
+       -> Exp Bucket
+       -> Exp (Maybe Int)
+lookup = undefined
 
 insert :: (Eq key, Hashable key)
        => Acc (Vector (Bucket, key))

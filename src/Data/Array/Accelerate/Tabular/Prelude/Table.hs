@@ -26,7 +26,6 @@ module Data.Array.Accelerate.Tabular.Prelude.Table (
 
 import Data.Array.Accelerate hiding (Scalar, unit, the)
 import qualified Data.Array.Accelerate as A
-import Data.Array.Accelerate.Data.Maybe
 
 import Data.Array.Accelerate.Tabular.Classes.Rep
 

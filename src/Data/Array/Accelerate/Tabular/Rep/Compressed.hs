@@ -53,12 +53,12 @@ data NonUniqueCompressed
 -- Compressed instances.
 -- ---------------------
 
-instance (Rep rep keys, Elt key) =>
-  Rep (rep :. Compressed) (keys :. key) where
+-- instance (Rep rep keys, Elt key) =>
+--   Rep (rep :. Compressed) (keys :. key) where
 
-  type MetaR (rep :. Compressed) (keys :. key) = CompressedMetaR rep keys key
+--   type MetaR (rep :. Compressed) (keys :. key) = CompressedMetaR rep keys key
 
-  emptyMeta = emptyCompressed
+--   emptyMeta = emptyCompressed
 
 
 -- Ordered compressed instances.
@@ -102,9 +102,11 @@ instance (Rep rep keys, Ord key) =>
         met' = CompressedMeta met (scanl1 (+) segSizes) is''
     in  T3 met' (scatter perm' (fill (shape perm') undef) perm'') n'
 
-  -- orderedCreateMeta = createOrdCompressedMeta True orderedCreateMeta
-
   enumKeys = enumKeysCompressed
+
+  
+
+
 
 
 instance (Fold rep keys, Ord key) =>

@@ -4,6 +4,10 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE RebindableSyntax #-}
 
 module Data.Array.Accelerate.Tabular.Util (
   emptyVector, splitKeys
@@ -12,12 +16,15 @@ module Data.Array.Accelerate.Tabular.Util (
 , histogram
 , combineMaybe
 , singleton
+, join
+, lookupMany
 ) where
+
+import qualified Prelude as P
 
 import Data.Array.Accelerate
 import Data.Array.Accelerate.Unsafe (undef)
-
-
+import Data.Array.Accelerate.Control.Monad
 
 -- | Creates an empty (length-0) vector.
 --
@@ -95,6 +102,21 @@ combineMaybe f mx my = T2 mx my & match \case
 unindex :: (Elt a, Elt b) => Exp (a :. b) -> Exp (a, b)
 unindex (x ::. y) = T2 x y
 
+-- | The 'join' function is the conventional monad join operator. It
+-- is used to remove one level of monadic structure, projecting its
+-- bound argument into the outer level.
+--
+--
+-- \'@'join' bss@\' can be understood as the @do@ expression
+--
+-- @
+-- do bs <- bss
+--    bs
+-- @
+--
+join :: (Monad m, Elt a, Elt (m a), Elt (m (m a))) => Exp (m (m a)) -> Exp (m a)
+join = (>>= P.id)
+
 -- | Create a single-element array of any dimensionality.
 --
 singleton :: (Unit sh, Elt a) => Exp a -> Acc (Array sh a)
@@ -108,3 +130,26 @@ instance Unit Z where
 
 instance (Unit sh) => Unit (sh :. Int) where
   indexUnit = indexUnit ::. 1
+
+-- | Lookup multiple keys in an association array.
+--
+-- This function is non-deterministic when the array contains duplicate keys.
+-- In this case, the value associated with one of these keys will be returned.
+--
+lookupMany :: (Eq a, Elt b)
+     => Acc (Vector a)
+     -> Acc (Vector (a, b))
+     -> Acc (Vector (Maybe b))
+lookupMany es vec =
+  let ies' = replicate (Z_ ::. length vec ::. All_)      (indexed es)
+      vec' = replicate (Z_ ::. All_       ::. length es) vec
+
+      target = fill (shape es) Nothing_
+
+      matches = zipWithChecked f ies' vec'
+  in  permuteUnique' target matches
+  where
+    f (T2 ei ev) (T2 va vb) =
+      if ev == va
+        then Just_ (T2 ei (Just_ vb))
+        else Nothing_
