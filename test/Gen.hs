@@ -55,6 +55,12 @@ charKey :: Gen Char
 charKey = P.chr <$> G.int (R.linear (P.ord '\x0020') (P.ord '\x007E'))
 -- ASCII range, for simplicity and smaller sizes
 
+char1 :: Gen (Z :. Char)
+char1 = (Z :.) <$> charKey
+
+char2 :: Gen (Z :. Int :. Char)
+char2 = (\a b -> Z :. a :. b) <$> intKey <*> charKey
+
 intKey :: Gen Int
 intKey = G.int (R.linear 0 48)
 

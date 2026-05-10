@@ -37,7 +37,6 @@ import Data.Array.Accelerate.Tabular.Classes.Fold
 import Data.Array.Accelerate.Unsafe (undef)
 
 import Data.Typeable
-import Data.Array.Accelerate.Data.Functor
 import Data.Array.Accelerate.Control.Monad
 
 data HashStatus = Todo | Done
@@ -95,12 +94,17 @@ instance (Rep rep keys, Eq key, Hashable key) =>
 instance (Index rep keys, Eq key, Hashable key) =>
   (Index (rep :. Hashed) (keys :. key)) where
 
+  -- Parallel reads do not require a primive (see the implementation of 'gather'), so lookup can be scalar while-loop.
+  -- This will give roughly the same execution pattern as manually masking which entries are done.
   toLinearIndices HashedMeta { met, hset } keys =
     let (ks, is) = splitKeys keys
         is'      = toLinearIndices met ks
     in zipWithChecked (\k mb -> lookup hset k =<< mb) is is'
   
-  unsafeToLinearIndices = error "todo"
+  unsafeToLinearIndices HashedMeta { met, hset } keys =
+    let (ks, is) = splitKeys keys
+        is'      = map fromJust $ toLinearIndices met ks
+    in map fromJust $ zipWithChecked (lookup hset) is is'
 
 
 
@@ -157,12 +161,31 @@ emptyHashSet n w =
   let ks = fill (I1 $ n * w) Nothing_
   in  HashSet ks (unit w)
 
-lookup :: (Eq key, Hashable key)
+lookup :: (HasCallStack, Eq key, Hashable key)
        => Acc (HashSet key)
        -> Exp key
        -> Exp Bucket
        -> Exp (Maybe Int)
-lookup = undefined
+lookup HashSet { keys, width } k b =
+  let start = T3 0 (Just_ $ hash k) False_
+      T3 _ mp done = while condition step start
+  in  if done
+        then mp
+        else Nothing_
+  where
+    condition (T3 i mp _) = i < the width && isJust mp
+
+    step (T3 i mp _) = 
+      let p  = fromJust mp -- Safe: 'condition' checks isJust.
+          p' = indexOf' b p (the width)
+      in  (keys !! p') & match \case
+        Nothing_ -> T3 undef Nothing_ True_ -- Empty entry: key not present.
+        Just_ k' -> if k' == k
+                      -- Key found: stop here.
+                      then T3 (the width) (Just_ p') True_
+                      -- Other key found: keep looking.
+                      else T3 (i + 1) (Just_ $ nextInSequence p) False_
+
 
 insert :: (Eq key, Hashable key)
        => Acc (Vector (Bucket, key))
@@ -209,9 +232,10 @@ insert sks (HashSet { keys, width }) =
             Nothing_ -> w
           work' = zipWithChecked h work mks'
       in  T3 (map (+ 1) i) work' ks'
-      where
-        nextInSequence :: Exp Pos -> Exp Pos
-        nextInSequence = (+ 1)
+
+
+nextInSequence :: Exp Pos -> Exp Pos
+nextInSequence = (+ 1)
 
 isCollision :: (Eq a)
             => Exp a

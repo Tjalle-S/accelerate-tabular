@@ -3,11 +3,13 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE BlockArguments #-}
 
 module Properties (
   createPreservesAssocs
 , foldAllSameAsFoldr
 , filterPreservesFiltered
+, indexingSameAsLookup
 ) where
 
 import qualified Prelude as P
@@ -51,8 +53,7 @@ createPreservesAssocs runN _ gen = property $ do
 filterPreservesFiltered :: forall rep key val
                         .  ( NotScalarConstruct rep
                           , Show key, Show val
-                          , P.Ord key, P.Ord val, P.Integral val
-                          , Ord val, Integral val
+                          , P.Ord key, P.Integral val, Integral val
                           , Rep rep key
                           )
                         => RunN
@@ -95,3 +96,33 @@ foldAllSameAsFoldr runN _ gen = property $ do
   annotateShow res
 
   res === P.foldr ((+) . P.snd) 0 (toList kvs)
+
+indexingSameAsLookup :: forall rep key val
+                     . ( NotScalarConstruct rep
+                       , Show key, Show val, Elt val
+                       , P.Eq key, P.Eq val
+                       , Rep rep key
+                       )
+                     => RunN
+                     -> Proxy rep
+                     -> (DIM1 -> Gen (Vector (key, val)))
+                     -> (DIM1 -> Gen (Vector key))
+                     -> Property
+indexingSameAsLookup runN _ genKVs genLookups = property $ do
+  len <- forAll dim1
+  kvs <- forAll (genKVs len)
+
+  ks   <- forAll (genLookups len)
+
+  -- Make sure some keys are searched that are actually present.
+  let Z :. len' = len
+      hlen = len' `P.div` 2
+      ks' = P.take hlen (toList ks) P.++ P.take hlen (P.map P.fst $ toList kvs)
+      ks'' = fromList (Z :. P.length ks') ks'
+
+  let !go = runN $ \kvs' ks''' -> indexMany (createTable @rep @key @val kvs') ks'''
+
+  let res = toList (go kvs ks'')
+  annotateShow res
+
+  res === P.map (`P.lookup` toList kvs) ks'

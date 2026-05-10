@@ -131,9 +131,10 @@ instance Rep Z Z where
 --
 data AssumeOrd = AssumeOrdered | NoAssumeOrdered
 
+-- | Contains an explicit dictionary if the given boolean is 'True'.
 data MaybeDict :: Bool -> Constraint -> Type where
   NoDict ::      MaybeDict False a
-  Dict   :: a => MaybeDict True a
+  Dict   :: a => MaybeDict True  a
 
 -- | Representations that support efficient indexing.
 --
