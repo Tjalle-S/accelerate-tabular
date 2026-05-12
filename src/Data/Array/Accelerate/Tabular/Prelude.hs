@@ -14,6 +14,8 @@ module Data.Array.Accelerate.Tabular.Prelude (
 , indexed
 , filter
 
+, innerjoin, leftouterjoin, rightouterjoin, fullouterjoin
+
 , module Tabular.Prelude
 ) where
 
@@ -60,7 +62,7 @@ filter p tab =
   let kvs   = massocs tab
   in  createTable' (isOrdered tab)
         $ afst
-        $ compact 
+        $ compact
           (A.map (maybe False_ $ uncurry p) kvs)
           (A.map fromJust                   kvs)
 
@@ -70,3 +72,66 @@ isOrdered :: forall rep key val . (Rep rep key)
 isOrdered _ = case isOrderedProxy @rep Proxy of
   Nothing   -> NoAssumeOrdered
   Just Refl -> AssumeOrdered
+
+
+-- Reference implementations for joins.
+
+innerjoin :: (NotScalarConstruct rep'', Rep rep key, Rep rep' key, Rep rep'' key, Elt a, Elt b, Elt c)
+          => (Exp a -> Exp b -> Exp c)
+          -> Acc (Table rep key a)
+          -> Acc (Table rep' key b)
+          -> Acc (Table rep'' key c)
+innerjoin f xs ys =
+  let (xks, xvs) = unzip (assocs xs)
+      yvs  = indexMany ys xks
+      kvs = afst
+          $ justs
+          $ zipWith3 (\k a mb -> T2 k <$> maybe Nothing_ (Just_ . f a) mb)
+            xks
+            xvs
+            yvs
+  in  createTable kvs
+
+leftouterjoin :: (NotScalarConstruct rep'', Rep rep key, Rep rep' key, Rep rep'' key, Elt a, Elt b, Elt c)
+              => (Exp a -> Exp b -> Exp c)
+              -> Exp b
+              -> Acc (Table rep key a)
+              -> Acc (Table rep' key b)
+              -> Acc (Table rep'' key c)
+leftouterjoin f d xs ys =
+  let (xks, xvs) = unzip (assocs xs)
+      yvs  = indexMany ys xks
+      kvs = zipWith3 (\k a mb -> T2 k $ f a (fromMaybe d mb))
+            xks
+            xvs
+            yvs
+  in  createTable kvs
+
+rightouterjoin :: (NotScalarConstruct rep'', Rep rep key, Rep rep' key, Rep rep'' key, Elt a, Elt b, Elt c)
+              => (Exp a -> Exp b -> Exp c)
+              -> Exp a
+              -> Acc (Table rep key a)
+              -> Acc (Table rep' key b) 
+              -> Acc (Table rep'' key c)
+rightouterjoin f d = flip $ leftouterjoin (flip f) d
+
+fullouterjoin :: (NotScalarConstruct rep'', Rep rep key, Rep rep' key, Rep rep'' key, Elt a, Elt b, Elt c)
+              => (Exp a -> Exp b -> Exp c)
+              -> Exp a
+              -> Exp b
+              -> Acc (Table rep key a)
+              -> Acc (Table rep' key b) 
+              -> Acc (Table rep'' key c)
+fullouterjoin f dx dy xs ys =
+  let (xks, xvs) = unzip (assocs xs)
+      (yks, yvs) = unzip (assocs ys)
+
+      kvs1 = zipWith3 (\k a mb -> T2 k $ f a (fromMaybe dy mb))
+            xks
+            xvs
+            (indexMany ys xks)
+      kvs2 = zipWith3 (\k b ma -> T2 k $ f (fromMaybe dx ma) b)
+            yks
+            yvs
+            (indexMany xs yks)
+  in  createTable (kvs1 ++ kvs2)

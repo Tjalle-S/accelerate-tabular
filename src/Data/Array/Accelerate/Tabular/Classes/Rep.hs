@@ -17,9 +17,8 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE RankNTypes #-}
+
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module Data.Array.Accelerate.Tabular.Classes.Rep (

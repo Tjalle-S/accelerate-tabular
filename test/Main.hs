@@ -23,6 +23,7 @@ tests = testGroup "Tests"
   , testGroup "FoldAll equal to foldr"   testsFoldAll
   , testGroup "Filter preserves correct" testsFilter
   , testGroup "Indexing finds correct"   testsIndexing
+  , testGroup "Inner join matches ref"   testsInnerJoin
   ]
 
 testsCreatePreservesAssocs :: [TestTree]
@@ -96,6 +97,18 @@ testsIndexing =
   where
     makeTest name proxy key val = testProperty name $
       indexingSameAsLookup runN proxy (genAssocs key val) (`array` key)
+
+testsInnerJoin :: [TestTree]
+testsInnerJoin =
+  [ makeTest "Dense / Int"          dense dense dense      dim1  int
+  , makeTest "OrdCompressed / Int"  compressed compressed compressed dim1  int
+  , makeTest "Hashed / Int"         hashed hashed hashed    dim1  int
+  , makeTest "Dense2/CSR/Dense2"    dense2 csr dense2     dim2  int
+  , makeTest "CSR/Dense2/Hashed2"    csr dense2 hashed2     dim2  int
+  ]
+  where
+    makeTest name proxy1 proxy2 proxy3 key val = testProperty name $
+      innerJoinReference runN proxy1 proxy2 proxy3 (genAssocs key val)
 
 dense :: Proxy (Z :. Dense)
 dense = Proxy

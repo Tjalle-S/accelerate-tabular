@@ -10,6 +10,7 @@ module Properties (
 , foldAllSameAsFoldr
 , filterPreservesFiltered
 , indexingSameAsLookup
+, innerJoinReference
 ) where
 
 import qualified Prelude as P
@@ -20,6 +21,8 @@ import Data.Proxy
 import Data.Array.Accelerate hiding (assert, foldAll, filter, the)
 import qualified Data.Array.Accelerate as A
 import Data.Array.Accelerate.Tabular hiding (assert)
+import Data.Array.Accelerate.Tabular.Prelude
+
 
 import Hedgehog
 
@@ -120,9 +123,53 @@ indexingSameAsLookup runN _ genKVs genLookups = property $ do
       ks' = P.take hlen (toList ks) P.++ P.take hlen (P.map P.fst $ toList kvs)
       ks'' = fromList (Z :. P.length ks') ks'
 
-  let !go = runN $ \kvs' ks''' -> indexMany (createTable @rep @key @val kvs') ks'''
+  let !go = runN $ \kvs' ks''' -> indexMany (createTable @rep kvs') ks'''
 
   let res = toList (go kvs ks'')
   annotateShow res
 
   res === P.map (`P.lookup` toList kvs) ks'
+
+innerJoinReference :: forall rep rep' rep'' key val
+                    . ( NotScalarConstruct rep
+                      , NotScalarConstruct rep'
+                      , NotScalarConstruct rep''
+                      , Show key, Show val
+                      , P.Ord key, P.Ord val, P.Num val, Num val
+                      , Rep rep key
+                      , Rep rep' key
+                      , Rep rep'' key
+                      )
+                    => RunN
+                    -> Proxy rep
+                    -> Proxy rep'
+                    -> Proxy rep''
+                    -> (DIM1 -> Gen (Vector (key, val)))
+                    -> Property
+innerJoinReference runN _ _ _ gen = property $ do
+  len1 <- forAll dim1
+  len2 <- forAll dim1
+
+  kvs1 <- forAll (gen len1)
+  kvs2 <- forAll (gen len2)
+
+  let !go = runN $ go'
+
+  let res = toList (go kvs1 kvs2)
+  annotateShow res
+
+  let ref = [ (k1, v1 + v2)
+            | (k1, v1) <- toList kvs1
+            , (k2, v2) <- toList kvs2
+            , k1 P.== k2
+            ]
+
+  assert $ res `isPermutationOf` ref
+  where
+    go' :: Acc (Vector (key, val))
+        -> Acc (Vector (key, val))
+        -> Acc (Vector (key, val))
+    go' kvs1 kvs2 = assocs
+                  $ innerjoin @rep'' (+)
+                    (createTable @rep  kvs1)
+                    (createTable @rep' kvs2)
