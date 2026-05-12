@@ -54,7 +54,7 @@ indexed = imap T2
 
 -- | Return a table containing only the elements that fulfill the given condition.
 --
-filter :: (NotScalarConstruct rep', Rep rep' key, Rep rep key, Elt val)
+filter :: (NotScalar key, Rep rep' key, Rep rep key, Elt val)
        => (Exp key -> Exp val -> Exp Bool)
        -> Acc (Table rep  key val)
        -> Acc (Table rep' key val)
@@ -76,7 +76,11 @@ isOrdered _ = case isOrderedProxy @rep Proxy of
 
 -- Reference implementations for joins.
 
-innerjoin :: (NotScalarConstruct rep'', Rep rep key, Rep rep' key, Rep rep'' key, Elt a, Elt b, Elt c)
+innerjoin :: forall rep'' rep' rep key c b a
+          . ( NotScalar key
+            , Rep rep key, Rep rep' key, Rep rep'' key
+            , Elt a, Elt b, Elt c
+            )
           => (Exp a -> Exp b -> Exp c)
           -> Acc (Table rep key a)
           -> Acc (Table rep' key b)
@@ -92,7 +96,11 @@ innerjoin f xs ys =
             yvs
   in  createTable kvs
 
-leftouterjoin :: (NotScalarConstruct rep'', Rep rep key, Rep rep' key, Rep rep'' key, Elt a, Elt b, Elt c)
+leftouterjoin :: forall rep'' rep' rep key c b a
+              . ( NotScalar key
+                , Rep rep key, Rep rep' key, Rep rep'' key
+                , Elt a, Elt b, Elt c
+                )
               => (Exp a -> Exp b -> Exp c)
               -> Exp b
               -> Acc (Table rep key a)
@@ -107,7 +115,11 @@ leftouterjoin f d xs ys =
             yvs
   in  createTable kvs
 
-rightouterjoin :: (NotScalarConstruct rep'', Rep rep key, Rep rep' key, Rep rep'' key, Elt a, Elt b, Elt c)
+rightouterjoin :: forall rep'' rep' rep key c b a
+               . ( NotScalar key
+                 , Rep rep key, Rep rep' key, Rep rep'' key
+                 , Elt a, Elt b, Elt c
+                 )
               => (Exp a -> Exp b -> Exp c)
               -> Exp a
               -> Acc (Table rep key a)
@@ -115,7 +127,11 @@ rightouterjoin :: (NotScalarConstruct rep'', Rep rep key, Rep rep' key, Rep rep'
               -> Acc (Table rep'' key c)
 rightouterjoin f d = flip $ leftouterjoin (flip f) d
 
-fullouterjoin :: (NotScalarConstruct rep'', Rep rep key, Rep rep' key, Rep rep'' key, Elt a, Elt b, Elt c)
+fullouterjoin :: forall rep'' rep' rep key c b a
+              . ( NotScalar key
+                , Rep rep key, Rep rep' key, Rep rep'' key
+                , Elt a, Elt b, Elt c
+                )
               => (Exp a -> Exp b -> Exp c)
               -> Exp a
               -> Exp b

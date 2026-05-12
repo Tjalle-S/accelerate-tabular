@@ -16,7 +16,6 @@
 module Data.Array.Accelerate.Tabular.Prelude.Reindex (
   reindex, reindexUnique, reindex'
 
-, NotScalarReindex
 ) where
 
 import Prelude (id)
@@ -28,8 +27,6 @@ import Data.Array.Accelerate.Data.Maybe
 import Data.Array.Accelerate.Tabular.Classes.Rep
 import Data.Array.Accelerate.Tabular.Prelude.Table
 import Data.Array.Accelerate.Tabular.Util
-
-import GHC.TypeError
 
 import Lens.Micro
 import Data.Array.Accelerate.Data.Lens ()
@@ -47,7 +44,7 @@ import Data.Array.Accelerate.Data.Lens ()
 -- When changing only the underlying representation, use 'reindex'' instead,
 -- or pass 'const' and 'id'.
 --
-reindex :: (NotScalarReindex rep', Rep rep key, Rep rep' key', Elt val)
+reindex :: (NotScalar key', Rep rep key, Rep rep' key', Elt val)
         => (Exp val -> Exp val -> Exp val)
         -> (Exp key -> Exp key')
         -> Acc (Table rep  key val)
@@ -74,7 +71,7 @@ reindex combv mapk Table_ { meta_, vals_ } =
 
 -- | Like 'reindex', but assumes the key mapping is injective.
 --
-reindexUnique :: (NotScalarReindex rep', Rep rep key, Rep rep' key', Elt val)
+reindexUnique :: (NotScalar key', Rep rep key, Rep rep' key', Elt val)
               => (Exp key -> Exp key')
               -> Acc (Table rep  key val)
               -> Acc (Table rep' key' val)
@@ -82,13 +79,7 @@ reindexUnique = reindex const
 
 -- | Change the underlying representation of a table.
 --
-reindex' :: (NotScalarReindex rep', Rep rep key, Rep rep' key, Elt val)
+reindex' :: (NotScalar key, Rep rep key, Rep rep' key, Elt val)
          => Acc (Table rep  key val)
          -> Acc (Table rep' key val)
 reindex' = reindex const id
-
--- | Reindexing cannot be used to create a scalar table.
---
-type NotScalarReindex rep = NotScalar (
-       Text "Cannot reindex to a scalar Table (Table Z Z val)."
-  :$$: Text "If you intended to reduce to a scalar, use Data.Array.Accelerate.Tabular.foldAll instead.") rep

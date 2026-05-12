@@ -44,7 +44,7 @@ import Data.Array.Accelerate.Tabular.Prelude (innerjoin, fullouterjoin)
 
 
 main :: Prelude.IO ()
-main = let 
+main = let
           --  vs = [1.0, 3.0, 5.0, 7.0]
 
           --  d1s = [2,   2,    2,    1,   1,   8,   24]

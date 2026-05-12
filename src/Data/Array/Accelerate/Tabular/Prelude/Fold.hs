@@ -21,8 +21,6 @@ module Data.Array.Accelerate.Tabular.Prelude.Fold (
 
 , inner, inner1, inner2, inner3
 
-, NotScalarFold
-
 , module Fold
 ) where
 
@@ -45,7 +43,7 @@ import Control.Applicative (pure)
 -- Folding can only be performed over 1 or more /innermost/ dimensions.
 -- When folding over different dimensions, use 'Data.Array.Tabular.reindex' first to reorder the dimensions.
 --
-fold :: (NotScalarFold rep, Fold rep key, Elt val, FoldDescriptor rep key desc)
+fold :: (NotScalar key, Fold rep key, Elt val, FoldDescriptor rep key desc)
      => desc
      -> (Exp val -> Exp val -> Exp val)
      -> Exp val
@@ -58,7 +56,7 @@ fold d f e Table_ { meta_, vals_ } =
 -- | Variant of 'fold' that requires each segment being folded over to be
 -- non-empty, and does not need a default value.
 --
-fold1 :: (NotScalarFold rep, Fold rep key, Elt val, FoldDescriptor rep key desc)
+fold1 :: (NotScalar key, Fold rep key, Elt val, FoldDescriptor rep key desc)
       => desc
       -> (Exp val -> Exp val -> Exp val)
       -> Acc (Table rep key val)
@@ -70,7 +68,7 @@ fold1 d f Table_ { meta_, vals_ } =
 -- | Reduction of a table of arbitrary dimensionality to a single scalar value.
 -- The first argument needs to be function that is both associative /and/ commutative.
 --
-foldAll :: (NotScalarFold rep, Rep rep key, Elt val)
+foldAll :: (NotScalar key, Rep rep key, Elt val)
         => (Exp val -> Exp val -> Exp val)
         -> Exp val
         -> Acc (Table rep key val)
@@ -82,7 +80,7 @@ foldAll f e Table_ { vals_ } =
 -- | Variant of 'foldAll' that requires the table to be non-empty
 -- and does not need a default value.
 --
-fold1All :: (NotScalarFold rep, Rep rep key, Elt val)
+fold1All :: (NotScalar key, Rep rep key, Elt val)
         => (Exp val -> Exp val -> Exp val)
         -> Acc (Table rep key val)
         -> Acc (Scalar val)
@@ -93,7 +91,7 @@ fold1All f Table_ { vals_ } =
 -- | Variant of 'fold' that supports non-commutative combination functions.
 -- Can only be used if the order of keys in the table is predictable.
 --
-foldNonCommutative :: ( NotScalarFold rep
+foldNonCommutative :: ( NotScalar key
                       , IsOrdered rep
                       , Fold rep key
                       , Elt val
@@ -105,15 +103,6 @@ foldNonCommutative :: ( NotScalarFold rep
                    -> Acc (Table rep key val)
                    -> Acc (Table (FoldResult rep desc) (FoldResult key desc) val)
 foldNonCommutative = fold
-
--- Ideally, this would be a warning rather than an error, since
--- it will work correctly in all cases, giving the same results as id.
--- However, since custom warnings do not exist, it is an error instead.
-
--- | Folds should not be executed on scalar tables.
--- 
-type NotScalarFold rep = NotScalar (
-  Text "Folds on scalar tables (Table Z Z val) perform no work and should be omitted.") rep
 
 -- Common fold descriptors
 -- -----------------------

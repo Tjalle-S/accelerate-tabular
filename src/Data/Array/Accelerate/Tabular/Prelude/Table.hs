@@ -20,7 +20,6 @@ module Data.Array.Accelerate.Tabular.Prelude.Table (
 , pattern Table_, meta_, vals_
 , emptyTable, createTable', createTable, orderedCreateTable
 
-, NotScalarConstruct
 , NotScalar
 ) where
 
@@ -63,14 +62,14 @@ pattern Table_ { meta_, vals_ } = Pattern (meta_, vals_)
 
 -- | Create an empty table.
 -- 
-emptyTable :: (NotScalarConstruct rep, Rep rep key, Elt val)
+emptyTable :: (Rep rep key, NotScalar key, Elt val)
            => Acc (Table rep key val)
 emptyTable = Table_ {
   meta_ = emptyMeta
 , vals_ = emptyVector
 }
 
-createTable' :: (NotScalarConstruct rep, Rep rep key, Elt val)
+createTable' :: (Rep rep key, NotScalar key, Elt val)
              => AssumeOrd
              -> Acc (Vector (key, val))
              -> Acc (Table rep key val)
@@ -86,7 +85,7 @@ createTable' o kvs =
 
 -- | Construct a new table from the given keys and values.
 --
-createTable :: (NotScalarConstruct rep, Rep rep key, Elt val)
+createTable :: (Rep rep key, NotScalar key, Elt val)
             => Acc (Vector (key, val))
             -> Acc (Table rep key val)
 createTable = createTable' NoAssumeOrdered
@@ -96,18 +95,15 @@ createTable = createTable' NoAssumeOrdered
 -- It will be more efficient for most representations that require ordering, 
 -- but do not support O(1) indexing.
 --
-orderedCreateTable :: (NotScalarConstruct rep, Rep rep key, Elt val)
+orderedCreateTable :: (Rep rep key, NotScalar key, Elt val)
                    => Acc (Vector (key, val))
                    -> Acc (Table rep key val)
 orderedCreateTable = createTable' AssumeOrdered
 
-type NotScalarConstruct rep = NotScalar (
-       Text "Scalar tables (Table Z Z val) can not be created manually."
-  :$$: Text "Use Data.Array.Accelerate.Tabular.unit instead.") rep
-
 -- | Allows constraining to non-scalar tables.
 -- Can be used to enforce the assumptions on scalar tables.
 --
-type family NotScalar (msg :: ErrorMessage) rep :: Constraint where
-  NotScalar msg Z         = TypeError msg
-  NotScalar _   (_ :. _) = ()
+type family NotScalar key :: Constraint where
+  NotScalar Z          = TypeError (
+    Text "This operation can not be used on scalar tables (Table Z Z).")
+  NotScalar   (_ :. _) = ()
