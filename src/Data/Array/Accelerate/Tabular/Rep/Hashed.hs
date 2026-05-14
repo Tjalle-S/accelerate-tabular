@@ -30,7 +30,7 @@ import Data.Array.Accelerate
 
 import Data.Array.Accelerate.Tabular.Classes.Rep
 
-import Data.Array.Accelerate.Tabular.Util
+import Data.Array.Accelerate.Tabular.Util hiding (lookup)
 import Data.Array.Accelerate.Data.Hashable (Hashable(hash))
 import Data.Array.Accelerate.Data.Maybe
 import Data.Array.Accelerate.Tabular.Classes.Fold
@@ -98,13 +98,23 @@ instance (Index rep keys, Eq key, Hashable key) =>
   -- This will give roughly the same execution pattern as manually masking which entries are done.
   toLinearIndices HashedMeta { met, hset } keys =
     let (ks, is) = splitKeys keys
-        is'      = toLinearIndices met ks
-    in zipWithChecked (\k mb -> lookup hset k =<< mb) is is'
+        mbs      = toLinearIndices met ks
+    in zipWithChecked (\k mb -> lookupHash hset k =<< mb) is mbs
   
   unsafeToLinearIndices HashedMeta { met, hset } keys =
     let (ks, is) = splitKeys keys
-        is'      = map fromJust $ toLinearIndices met ks
-    in map fromJust $ zipWithChecked (lookup hset) is is'
+        bs       = map fromJust $ toLinearIndices met ks
+    in map fromJust $ zipWithChecked (lookupHash hset) is bs
+
+  toLinearIndex HashedMeta { met, hset } key = 
+    let T2 k i = unindex key
+        mb     = toLinearIndex met k
+    in  lookupHash hset i =<< mb
+
+  unsafeToLinearIndex HashedMeta { met, hset } key =
+    let T2 k i = unindex key
+        b      = unsafeToLinearIndex met k
+    in  fromJust $ lookupHash hset i b
 
 
 
@@ -161,12 +171,12 @@ emptyHashSet n w =
   let ks = fill (I1 $ n * w) Nothing_
   in  HashSet ks (unit w)
 
-lookup :: (HasCallStack, Eq key, Hashable key)
+lookupHash :: (HasCallStack, Eq key, Hashable key)
        => Acc (HashSet key)
        -> Exp key
        -> Exp Bucket
        -> Exp (Maybe Int)
-lookup HashSet { keys, width } k b =
+lookupHash HashSet { keys, width } k b =
   let start = T3 0 (Just_ $ hash k) False_
       T3 _ mp done = while condition step start
   in  if done

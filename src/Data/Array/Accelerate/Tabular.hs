@@ -34,6 +34,9 @@ module Data.Array.Accelerate.Tabular (
 , filter
 , assocs
 
+-- ** Zipping/joining tables
+, innerjoin, leftouterjoin, rightouterjoin, fullouterjoin
+
 -- ** Folding over tables
 , Fold
 , fold, fold1
@@ -67,15 +70,15 @@ module Data.Array.Accelerate.Tabular (
 , Ord(..), Ordering(..), pattern LT_, pattern EQ_, pattern GT_
 , Enum, succ, pred
 , Bounded, minBound, maxBound
--- Functor(..), (<$>), ($>), void,
--- Monad(..),
 
 -- *** Numeric type classes
 , Num, (+), (-), (*), negate, abs, signum, fromInteger
 , Integral, quot, rem, div, mod, quotRem, divMod
 , Rational(..)
 , Fractional, (/), recip, fromRational
-, Floating, pi, sin, cos, tan, asin, acos, atan, sinh, cosh, tanh, asinh,acosh, atanh, exp, sqrt, log, (**), logBase
+, Floating
+, pi, sin, cos, tan, asin, acos, atan, sinh, cosh, tanh, asinh, acosh, atanh
+, exp, sqrt, log, (**), logBase
 , RealFrac(..), div', mod', divMod'
 , RealFloat(..)
 
@@ -198,5 +201,4 @@ import qualified Data.Array.Accelerate as A
 import Data.Array.Accelerate.Tabular.Prelude
 import Data.Array.Accelerate.Tabular.Rep
 
--- import Data.Array.Accelerate.Tabular.Classes.Index
 import Data.Array.Accelerate.Tabular.Classes.IndexKey

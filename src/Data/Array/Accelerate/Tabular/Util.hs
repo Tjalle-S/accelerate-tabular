@@ -13,11 +13,12 @@ module Data.Array.Accelerate.Tabular.Util (
   emptyVector, splitKeys
 , rotateLeft, rotateRight
 , comparing
+, unindex
 , histogram
 , combineMaybe
 , singleton
 , join
-, lookupMany
+, lookupMany, lookup
 ) where
 
 import qualified Prelude as P
@@ -133,23 +134,63 @@ instance (Unit sh) => Unit (sh :. Int) where
 
 -- | Lookup multiple keys in an association array.
 --
--- This function is non-deterministic when the array contains duplicate keys.
--- In this case, the value associated with one of these keys will be returned.
---
 lookupMany :: (Eq a, Elt b)
-     => Acc (Vector a)
-     -> Acc (Vector (a, b))
-     -> Acc (Vector (Maybe b))
-lookupMany es vec =
-  let ies' = replicate (Z_ ::. length vec ::. All_)      (indexed es)
-      vec' = replicate (Z_ ::. All_       ::. length es) vec
+           => Acc (Vector a)
+           -> Acc (Vector (a, b))
+           -> Acc (Vector (Maybe b))
+lookupMany ks kvs = map (`lookup` kvs) ks
 
-      target = fill (shape es) Nothing_
+-- lookupMany :: (Eq a, Elt b)
+--      => Acc (Vector a)
+--      -> Acc (Vector (a, b))
+--      -> Acc (Vector (Maybe b))
+-- lookupMany es vec =
+--   let ies' = replicate (Z_ ::. length vec ::. All_)      (indexed es)
+--       vec' = replicate (Z_ ::. All_       ::. length es) vec
 
-      matches = zipWithChecked f ies' vec'
-  in  permuteUnique' target matches
+--       target = fill (shape es) Nothing_
+
+--       matches = zipWithChecked f ies' vec'
+--   in  permuteUnique' target matches
+--   where
+--     f (T2 ei ev) (T2 va vb) =
+--       if ev == va
+--         then Just_ (T2 ei (Just_ vb))
+--         else Nothing_
+
+-- lookupMany' :: (Eq a, Elt b)
+--      => Acc (Vector a)
+--      -> Acc (Vector (a, b))
+--      -> Acc (Vector (Maybe b))
+-- lookupMany' es vec =
+--   let es'  = replicate (Z_ ::. All_      ::. length vec) es
+--       vec' = replicate (Z_ ::. length es ::. All_)       vec
+
+--       matches = zipWithChecked f es' vec'
+--   in  fold firstJust Nothing_ matches
+--   where
+--     f e (T2 va vb) =
+--       if e == va
+--         then Just_ vb
+--         else Nothing_
+    
+--     -- Just the alternative instance.
+--     firstJust mx my = mx & match \case
+--       Nothing_ -> my
+--       Just_ _  -> mx
+
+lookup :: (Eq a, Elt b)
+       => Exp (a)
+       -> Acc (Vector (a, b))
+       -> Exp (Maybe b)
+lookup x ys = snd $ while condition step (T2 0 Nothing_)
   where
-    f (T2 ei ev) (T2 va vb) =
-      if ev == va
-        then Just_ (T2 ei (Just_ vb))
-        else Nothing_
+    condition (T2 i _) = i < (length ys)
+
+    step (T2 i _) = 
+      let T2 x' y = ys !! i
+      in  if x' == x
+            -- If found, set counter to end, stop immediately.
+            -- Fewer checks required this way.
+            then T2 (length ys) (Just_ y) 
+            else T2 (i + 1)     Nothing_

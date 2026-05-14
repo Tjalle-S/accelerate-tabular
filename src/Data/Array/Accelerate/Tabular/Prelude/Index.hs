@@ -30,8 +30,8 @@ index :: (Rep rep key, Elt val)
       -> Exp (Maybe val)
 index Table_ { meta_, vals_ } key =
   case getIndexMeta meta_ of
-    NoDict -> let res = lookupMany (singleton key) $ zip (enumKeys meta_) vals_
-              in  join (res !! 0)
+    NoDict -> let res = lookup key $ zip (enumKeys meta_) vals_
+              in  join res
     Dict   -> let mi = toLinearIndex meta_ key
               in  (vals_ !!) =<< mi
 
@@ -45,9 +45,7 @@ index Table_ { meta_, vals_ } key =
 
 -- | Like 'index', but accesses values at multiple keys at once.
 --
--- 'indexMany' is in most cases more efficient than using @'Data.Array.Accelerate.map' 'index'@.
--- Additionally, the former will work even for representations where the latter
--- would introduce nested parallelism.
+-- 'indexMany' may be more efficient than using @'Data.Array.Accelerate.map' 'index'@.
 --
 indexMany :: (Rep rep key, Elt val)
           => Acc (Table rep key val)
@@ -72,8 +70,8 @@ unsafeIndex :: (Rep rep key, Elt val)
             -> Exp val
 unsafeIndex Table_ { meta_, vals_ } key =
   case getIndexMeta meta_ of
-  NoDict -> let res = lookupMany (singleton key) $ zip (enumKeys meta_) vals_
-            in  fromJust $ fromJust (res !! 0)
+  NoDict -> let res = lookup key $ zip (enumKeys meta_) vals_
+            in  fromJust (fromJust res)
   Dict   -> fromJust (vals_ !! unsafeToLinearIndex meta_ key)
 
 -- | Infix variation of 'unsafeIndex'.
@@ -89,9 +87,7 @@ unsafeIndex Table_ { meta_, vals_ } key =
 
 -- | Like 'unsafeIndex', but accesses values at multiple keys at once.
 --
--- 'unsafeIndexMany' is in most cases more efficient than using @'Data.Array.Accelerate.map' 'unsafeIndex'@.
--- Additionally, the former will work even for representations where the latter
--- would introduce nested parallelism.
+-- 'unsafeIndexMany' may be more efficient than using @'Data.Array.Accelerate.map' 'unsafeIndex'@.
 --
 unsafeIndexMany :: (Rep rep key, Elt val)
                 => Acc (Table rep key val)

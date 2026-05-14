@@ -10,6 +10,8 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Data.Array.Accelerate.Tabular.Rep.Singleton (
   UnsafeCompleteSingleton
@@ -24,6 +26,9 @@ import Data.Array.Accelerate.Unsafe (undef)
 import Data.Array.Accelerate.Tabular.Classes.Fold
 
 import Prelude (type (~))
+
+import Data.Proxy
+import Data.Array.Accelerate.Control.Monad
 
 
 -- | Stores a single key on this level for each key in the parent levels.
@@ -60,6 +65,12 @@ instance (Rep rep keys, Eq key) =>
       (Meta rep keys, Vector key)
 
     type Ordered (rep :. UnsafeCompleteSingleton) = Ordered rep
+    type FastIndex (rep :. UnsafeCompleteSingleton) = FastIndex rep
+
+    getIndexConstraint _ _ =
+      case getIndexConstraint (Proxy @rep) (Proxy @keys) of
+        NoDict -> NoDict
+        Dict   -> Dict
 
     emptyMeta = Meta_ $ T2 emptyMeta emptyVector
 
@@ -85,6 +96,37 @@ instance (Fold rep keys, Eq key) =>
       FoldKeep       -> T2 dmet (asnd $ foldMeta FoldKeep met)
       FoldGroup rest -> foldMeta rest met
   
+
+instance (Index rep keys, Eq key) =>
+  Index (rep :. UnsafeCompleteSingleton) (keys :. key) where
+
+  toLinearIndex SingletonMeta { met, ks } (k ::. i) =
+    let i' = toLinearIndex met k
+    in  f =<< i'
+    where
+      f i' = if (ks !! i') == i
+               then Just_ i'
+               else Nothing_
+
+  unsafeToLinearIndex SingletonMeta { met } (k ::. _) =
+    unsafeToLinearIndex met k
+
+  toLinearIndices SingletonMeta { met, ks } keys = 
+    let (ks', is) = splitKeys keys
+        is' = toLinearIndices met ks'
+    in  zipWith f is' is
+    where
+      f mi' i = do
+        i' <- mi'
+        if (ks !! i') == i
+          then Just_ i'
+          else Nothing_
+    
+  unsafeToLinearIndices SingletonMeta { met } keys = 
+    let (ks, _) = splitKeys keys
+    in  unsafeToLinearIndices met ks
+
+
 
 
 -- Local utilities.

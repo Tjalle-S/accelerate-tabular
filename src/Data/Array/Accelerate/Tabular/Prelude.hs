@@ -54,7 +54,7 @@ indexed = imap T2
 
 -- | Return a table containing only the elements that fulfill the given condition.
 --
-filter :: (NotScalar key, Rep rep' key, Rep rep key, Elt val)
+filter :: (Rep rep' key, NotScalar key, Rep rep key, Elt val)
        => (Exp key -> Exp val -> Exp Bool)
        -> Acc (Table rep  key val)
        -> Acc (Table rep' key val)

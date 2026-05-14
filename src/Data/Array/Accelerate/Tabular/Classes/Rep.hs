@@ -144,14 +144,12 @@ class (Rep rep key, FastIndex rep ~ True) => Index rep key where
   unsafeToLinearIndex :: Acc (Meta rep key)
                       -> Exp key
                       -> Exp Int
-  unsafeToLinearIndex met = (!! 0) . unsafeToLinearIndices met . singleton
 
   -- | Convert a key into an index into the value array.
   -- If the key is not present, returns 'Nothing'.
   toLinearIndex :: Acc (Meta rep key)
                 -> Exp key
                 -> Exp (Maybe Int)
-  toLinearIndex met = (!! 0) . toLinearIndices met . singleton
 
     -- | Like 'unsafeToLinearIndex', but converts multiple keys in parallel.`
   unsafeToLinearIndices :: Acc (Meta rep key)

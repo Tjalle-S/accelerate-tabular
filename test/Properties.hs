@@ -27,8 +27,6 @@ import Data.Array.Accelerate.Tabular.Prelude
 import Hedgehog
 
 import Gen
-import Data.Array.Accelerate.Tabular.Prelude.Table (NotScalarConstruct)
-import Data.Array.Accelerate.Tabular.Prelude.Fold (NotScalarFold)
 
 
 createPreservesAssocs :: forall rep key val
