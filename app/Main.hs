@@ -26,6 +26,7 @@ import Data.Array.Accelerate.Tabular.Classes.Slice
 import Data.Array.Accelerate.Tabular.Prelude.Slice
 import Data.Array.Accelerate.Tabular.Classes.Fold
 import Data.Array.Accelerate (inspectCompiler)
+import Data.Array.Accelerate.Tabular.Prelude.Cartesian (cartesianWith)
 -- import Data.Array.Accelerate.Tabular.Classes.Rep (Rep(orderedCreateMeta))
 
 -- type I2 = Z :. Int :. Int
@@ -48,7 +49,7 @@ import Data.Array.Accelerate (inspectCompiler)
 main :: Prelude.IO ()
 main = 
   let kvs = use [(Z :. 0 :. 0, 0.0), (Z :. 0 :. 1, 0.1), (Z :. 1 :. 0, 1.0), (Z :. 1 :. 1, 1.1)]
-  in  Prelude.print $ run $ slice (Z_ ::. Keep_ ::. Fix_ 1) $ createTable @(Z :. Dense :. Dense) @(Z :. Int :. Int) @Float kvs
+  in  Prelude.print $ run $ slice (Z_ ::. Keep_ ::. Slice_ 1) $ createTable @(Z :. Dense :. Dense) @(Z :. Int :. Int) @Float kvs
 
 type Key = Z :. Int :. Int
 
@@ -61,15 +62,13 @@ apsp ds = afor (A.unit n) update ds
     Z_ ::. n' ::. n'' = A.the $ A.maximum $ keys ds
     n = max n' n''
 
+    update :: Acc (A.Scalar Int) -> Acc (Table rep Key Float) -> Acc (Table rep Key Float)
     update ak d = let k = A.the ak
                       -- should be slice instead of filter
-                      toK   = filter @rep (\k' _ -> matches2 k k') d
-                      fromK = filter @rep (\k' _ -> matches1 k k') d
-                      added = undefined :: Acc (Table rep Key Float) -- eqJoinWith (+) toK fromK
-                  in  fullouterjoin @rep min inf inf d added
-
-    matches1 k (Z_ ::. k' ::. _)  = k == k'
-    matches2 k (Z_ ::. _  ::. k') = k == k'
+                      toK   = slice (Z_ ::. Keep_    ::. Slice_ k) d
+                      fromK = slice (Z_ ::. Slice_ k ::. Keep_)    d
+                      --added = cartesianWith @rep (+) toK fromK
+                  in  undefined --fullouterjoin @rep min inf inf d added
 
 afor :: (Arrays a) => Acc (A.Scalar Int)
                    -> (Acc (A.Scalar Int) -> Acc a -> Acc a)

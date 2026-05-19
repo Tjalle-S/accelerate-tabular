@@ -10,6 +10,8 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
@@ -19,6 +21,7 @@ module Data.Array.Accelerate.Tabular.Prelude.Table (
 
 , pattern Table_, meta_, vals_
 , emptyTable, createTable', createTable, orderedCreateTable
+, assumeOrdered
 
 , NotScalar
 ) where
@@ -32,6 +35,8 @@ import Control.DeepSeq (NFData)
 import Data.Array.Accelerate.Tabular.Util (emptyVector)
 import Data.Kind
 import GHC.TypeError
+import Data.Type.Equality
+import Data.Proxy
 
 -- | A table, consisting of metadata and values.
 --
@@ -69,7 +74,7 @@ emptyTable = Table_ {
 , vals_ = emptyVector
 }
 
-createTable' :: (Rep rep key, NotScalar key, Elt val)
+createTable' :: (Rep rep key, Elt val)
              => AssumeOrd
              -> Acc (Vector (key, val))
              -> Acc (Table rep key val)
@@ -82,6 +87,13 @@ createTable' o kvs =
       vs'    = map Just_ vs
 
   in  Table_ met (scatter perm' target vs')
+
+assumeOrdered :: forall rep key val . (Rep rep key)
+              => Acc (Table rep key val)
+              -> AssumeOrd
+assumeOrdered _ = case isOrderedProxy @rep Proxy of
+  Nothing   -> NoAssumeOrdered
+  Just Refl -> AssumeOrdered
 
 -- | Construct a new table from the given keys and values.
 --

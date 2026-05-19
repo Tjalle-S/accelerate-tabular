@@ -6,6 +6,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Data.Array.Accelerate.Tabular.Prelude.Slice (
   slice
@@ -19,15 +20,19 @@ import Data.Array.Accelerate.Tabular.Prelude.Filter
 import Data.Array.Accelerate.Tabular.Prelude.Table
 import Data.Array.Accelerate.Tabular.Prelude.Reindex
 
+import Data.Type.Equality
+
 -- | Index a table with a generalised key.
 -- This can be used to cut out entire dimensions from the table.
 --
-slice :: forall rep key desc val
+slice :: forall rep key desc val rep' key'
       .  ( NotScalar key, NotScalar (SliceResult key desc)
          , Rep rep key
          , SliceDescriptor key desc
          , Elt val
-         , Rep (SliceResult rep desc) (SliceResult key desc)
+         , Rep rep' key'
+         , rep' ~ SliceResult rep desc
+         , key' ~ SliceResult key desc
          )
       => Exp desc
       -> Acc (Table rep key val)
@@ -36,7 +41,7 @@ slice desc =
   let d = getSliceDescriptor desc
       t = toTransform d
       p = (\k _ -> toPredicate d k)
-  in    reindexUnique @(SliceResult rep desc) t
+  in    reindexUnique @rep' t
       . filter @rep p
 
 toPredicate :: SliceDescriptor' key desc
