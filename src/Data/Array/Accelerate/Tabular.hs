@@ -1,6 +1,6 @@
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE NoImplicitPrelude  #-}
 
-{-# LANGUAGE PatternSynonyms   #-}
+{-# LANGUAGE PatternSynonyms    #-}
 {-# LANGUAGE ExplicitNamespaces #-}
 
 module Data.Array.Accelerate.Tabular (
@@ -32,7 +32,7 @@ module Data.Array.Accelerate.Tabular (
 
 , map
 , filter
-, assocs
+, assocs, keys, values
 
 -- ** Zipping/joining tables
 , innerjoin, leftouterjoin, rightouterjoin, fullouterjoin
@@ -53,9 +53,20 @@ module Data.Array.Accelerate.Tabular (
 -- **** Commonly used fold descriptors
 , inner, inner1, inner2, inner3
 
+-- ** Slicing tables
+-- , Slice(..)
+, slice
+, SliceFix (..), pattern Slice_
+, SliceDescriptor
+, SliceResult
+
 -- ** Reindexing tables
 , reindex, reindexUnique, reindex'
 
+-- ** Flow control
+, (?|), acond
+, awhile, awhileSpeculative, awhileAndOne,
+  IfThenElse(..)
 -- ---------------------------------------------------------------------------
   -- * The /Accelerate/ Expression Language
   -- ** Scalar data types
@@ -193,6 +204,7 @@ import qualified Prelude as P
 import Data.Array.Accelerate hiding (
     map, filter
   , fold, fold1, foldAll, fold1All
+  , slice
   , (!)
   , Scalar, unit, the
   )
@@ -202,3 +214,4 @@ import Data.Array.Accelerate.Tabular.Prelude
 import Data.Array.Accelerate.Tabular.Rep
 
 import Data.Array.Accelerate.Tabular.Classes.IndexKey
+import Data.Array.Accelerate.Tabular.Classes.Slice

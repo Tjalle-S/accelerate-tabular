@@ -11,6 +11,8 @@
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE UndecidableInstances #-}
 
+{-# LANGUAGE ExplicitForAll #-}
+
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
 module Data.Array.Accelerate.Tabular.Prelude.Reindex (
@@ -71,7 +73,8 @@ reindex combv mapk Table_ { meta_, vals_ } =
 
 -- | Like 'reindex', but assumes the key mapping is injective.
 --
-reindexUnique :: (NotScalar key', Rep rep key, Rep rep' key', Elt val)
+reindexUnique :: forall rep' key' rep key val
+              .  (NotScalar key', Rep rep key, Rep rep' key', Elt val)
               => (Exp key -> Exp key')
               -> Acc (Table rep  key val)
               -> Acc (Table rep' key' val)

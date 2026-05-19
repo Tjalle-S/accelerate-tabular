@@ -7,23 +7,25 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE PatternSynonyms #-}
 
 module Main (main) where
 
 import qualified Prelude
 
-import Data.Array.Accelerate (zip, zipWith, foldSeg, zipWith3, inspectCompiler)
+import qualified Data.Array.Accelerate as A
 import Data.Array.Accelerate.LLVM.Native
 import Data.Array.Accelerate.Tabular.Rep
 import Data.Array.Accelerate.Tabular.Classes.Rep
 import Data.Array.Accelerate.Tabular
-import Data.Array.Accelerate.Tabular.Classes.Fold
-import Data.Array.Accelerate.Tabular.Prelude.Table
-import Data.Proxy (Proxy (Proxy))
 
 -- import qualified Data.Array.Accelerate.Tabular.Prelude.Zip as Z
-import Data.Array.Accelerate.Tabular.Util (lookupMany)
-import Data.Array.Accelerate.Tabular.Prelude (innerjoin, fullouterjoin)
+-- import Data.Array.Accelerate.Tabular.Util (lookupMany)
+import Data.Array.Accelerate.Tabular.Prelude
+import Data.Array.Accelerate.Tabular.Classes.Slice
+import Data.Array.Accelerate.Tabular.Prelude.Slice
+import Data.Array.Accelerate.Tabular.Classes.Fold
+import Data.Array.Accelerate (inspectCompiler)
 -- import Data.Array.Accelerate.Tabular.Classes.Rep (Rep(orderedCreateMeta))
 
 -- type I2 = Z :. Int :. Int
@@ -44,22 +46,36 @@ import Data.Array.Accelerate.Tabular.Prelude (innerjoin, fullouterjoin)
 
 
 main :: Prelude.IO ()
-main = let
-          --  vs = [1.0, 3.0, 5.0, 7.0]
+main = 
+  let kvs = use [(Z :. 0 :. 0, 0.0), (Z :. 0 :. 1, 0.1), (Z :. 1 :. 0, 1.0), (Z :. 1 :. 1, 1.1)]
+  in  Prelude.print $ run $ slice (Z_ ::. Keep_ ::. Fix_ 1) $ createTable @(Z :. Dense :. Dense) @(Z :. Int :. Int) @Float kvs
 
-          --  d1s = [2,   2,    2,    1,   1,   8,   24]
-          --  d2s = [3,   1,    0,    4,   1,   5,   3]
-          --  d3s = [1,   2,    2,    3,   4,   5,   6]
-          --  vs  = [2.3, 21.1, 12.0, 1.4, 5.1, 8.5, 24.3]
-          -- --  vs  = use [2 :: Int, 21, 12, 1, 5, 8, 24]
+type Key = Z :. Int :. Int
 
-          --  ks = zipWith3 (\d1 d2 d3 -> Z_ ::. d1 ::. d2 ::. d3) (use d1s) (use d2s) (use d3s)
-          --  ks = [Z :. 2, Z:.21, Z:.12, Z:.1, Z:.5, Z:.8, Z:.24]
-          --  kvs = zip (use ks) (use vs)
+inf :: Exp Float
+inf = 1 / 0
 
-        --    vec = fold (Keep :. Group :. Group) (+) 0 $ createTable @CSF3 @I3 @Float $ kvs
+apsp :: forall rep . (Rep rep Key) => Acc (Table rep Key Float) -> Acc (Table rep Key Float)
+apsp ds = afor (A.unit n) update ds
+  where
+    Z_ ::. n' ::. n'' = A.the $ A.maximum $ keys ds
+    n = max n' n''
 
-           tab1 = createTable @(Z :. Dense :. Dense) @(Z :. Int :. Int) @Float $ zip (use [Z :. 0 :. 0, Z :. 1 :. 1, Z :. 2 :. 2]) (use [0.0, 1.0, 2.0])
-           tab2 = createTable @(Z :. Hashed :. OrdCompressed) @(Z :. Int :. Int) @Float $ zip (use [Z :. 0 :. 0, Z :. 2 :. 2, Z :. 3 :. 3]) (use [0.0, 2.0, 3.0])
+    update ak d = let k = A.the ak
+                      -- should be slice instead of filter
+                      toK   = filter @rep (\k' _ -> matches2 k k') d
+                      fromK = filter @rep (\k' _ -> matches1 k k') d
+                      added = undefined :: Acc (Table rep Key Float) -- eqJoinWith (+) toK fromK
+                  in  fullouterjoin @rep min inf inf d added
 
-       in Prelude.print $ run $ fullouterjoin @(Z :. NonUniqueCompressed :. UnsafeCompleteSingleton) T2 (-1) (-1) tab1 tab2
+    matches1 k (Z_ ::. k' ::. _)  = k == k'
+    matches2 k (Z_ ::. _  ::. k') = k == k'
+
+afor :: (Arrays a) => Acc (A.Scalar Int)
+                   -> (Acc (A.Scalar Int) -> Acc a -> Acc a)
+                   -> Acc a
+                   -> Acc a
+afor n f x = asnd $ awhile
+  (\(T2 i _)  -> A.zipWith (<) i n)
+  (\(T2 i x') -> T2 (A.map (+ 1) i) (f i x'))
+  (T2 (A.unit 0) x)

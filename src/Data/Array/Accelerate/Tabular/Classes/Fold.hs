@@ -7,12 +7,15 @@
 
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE PatternSynonyms #-}
 
 module Data.Array.Accelerate.Tabular.Classes.Fold (
   Fold (..)
 , FoldDescriptor (..)
 , FoldDescriptor' (..)
-, Group (..), Keep (..)
+, Group (..), Keep (..), pattern Keep_
 , FoldResult
 ) where
 
@@ -48,7 +51,11 @@ instance Fold Z Z where
 
 
 data Keep  = Keep
+  deriving (Generic, Elt)
 data Group = Group
+
+pattern Keep_ :: Exp Keep
+pattern Keep_ = Pattern ()
 
 class (Rep rep key, Rep (FoldResult rep desc) (FoldResult key desc)) =>
   FoldDescriptor rep key desc where
