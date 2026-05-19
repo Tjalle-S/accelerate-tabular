@@ -29,10 +29,10 @@ import Data.Array.Accelerate
 
 import Control.DeepSeq (NFData)
 import Data.Typeable
-import Data.Array.Accelerate.Tabular.Rep.GenProperties (genProperties)
-import Data.Array.Accelerate.Tabular.Util
+import Data.Array.Accelerate.Tabular.Rep.GenProperties
 import Data.Kind (Constraint, Type)
 import Data.Type.Equality
+import qualified Prelude as P
 
 -- | Possible representations for tables with a given key type.
 --
@@ -128,7 +128,16 @@ instance Rep Z Z where
 
 -- | Whether or not a function may assume the input is already sorted.
 --
-data AssumeOrd = AssumeOrdered | NoAssumeOrdered
+data AssumeOrd = NoAssumeOrdered | AssumeOrdered
+  deriving (P.Eq, P.Ord)
+
+instance P.Semigroup AssumeOrd where
+  AssumeOrdered <> AssumeOrdered = AssumeOrdered
+  _             <> _             = NoAssumeOrdered
+
+instance P.Monoid AssumeOrd where
+  mempty = NoAssumeOrdered
+
 
 -- | Contains an explicit dictionary if the given boolean is 'True'.
 data MaybeDict :: Bool -> Constraint -> Type where

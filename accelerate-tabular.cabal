@@ -35,6 +35,7 @@ library
       Data.Array.Accelerate.Tabular.Monoid
       Data.Array.Accelerate.Tabular.Prelude
       Data.Array.Accelerate.Tabular.Prelude.Assocs
+      Data.Array.Accelerate.Tabular.Prelude.Cartesian
       Data.Array.Accelerate.Tabular.Prelude.Filter
       Data.Array.Accelerate.Tabular.Prelude.Fold
       Data.Array.Accelerate.Tabular.Prelude.Index
