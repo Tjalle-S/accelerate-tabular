@@ -56,7 +56,7 @@ type Key = Z :. Int :. Int
 inf :: Exp Float
 inf = 1 / 0
 
-apsp :: forall rep . (Rep rep Key) => Acc (Table rep Key Float) -> Acc (Table rep Key Float)
+apsp :: forall rep r1 r2 . (Fold rep Key, rep ~ (Z :. r1 :. r2)) => Acc (Table rep Key Float) -> Acc (Table rep Key Float)
 apsp ds = afor (A.unit n) update ds
   where
     Z_ ::. n' ::. n'' = A.the $ A.maximum $ keys ds
@@ -64,9 +64,10 @@ apsp ds = afor (A.unit n) update ds
 
     update :: Acc (A.Scalar Int) -> Acc (Table rep Key Float) -> Acc (Table rep Key Float)
     update ak d = let k = A.the ak
+                      test = fold (Keep :. Group) (+) 0 d
                       -- should be slice instead of filter
-                      toK   = slice (Z_ ::. Keep_    ::. Slice_ k) d
-                      fromK = slice (Z_ ::. Slice_ k ::. Keep_)    d
+                      -- toK   = slice (Z_ ::. Keep_    ::. Slice_ k) d
+                      -- fromK = slice (Z_ ::. Slice_ k ::. Keep_)    d
                       --added = cartesianWith @rep (+) toK fromK
                   in  undefined --fullouterjoin @rep min inf inf d added
 
