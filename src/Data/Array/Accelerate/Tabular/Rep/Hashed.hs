@@ -20,6 +20,7 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE BlockArguments #-}
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
+{-# LANGUAGE InstanceSigs #-}
 
 module Data.Array.Accelerate.Tabular.Rep.Hashed (
   Hashed
@@ -134,7 +135,7 @@ instance (Fold rep keys, Eq key, Hashable key) =>
                 len         = sum seg
                 seg'        = fill (I1 $ the len) n
             in  T2 met' seg'
-          FoldGroup rest ->
+          FoldGroup rest -> withDict rest $ 
             let T2 met' seg = foldMeta rest met
                 seg'        = map (* n) seg
             in  T2 met' seg'

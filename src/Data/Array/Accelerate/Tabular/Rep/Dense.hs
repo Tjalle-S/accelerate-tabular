@@ -109,7 +109,7 @@ instance (Fold rep keys, IndexKey key) =>
             len         = sum seg
             seg'        = fill (I1 $ the len) (the n)
         in  T2 met' seg'
-      FoldGroup rest ->
+      FoldGroup rest -> withDict rest $
         let T2 met' seg = foldMeta rest met
             seg'        = map (* the n) seg
         in  T2 met' seg'

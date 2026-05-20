@@ -193,7 +193,7 @@ foldCompressed d cmet@CompressedMeta { met, seg } =
   let seg' = stencil (\(l, m, _) -> m - l) (function $ const 0) seg
   in  case d of
         FoldKeep       -> T2 cmet seg'
-        FoldGroup rest -> T2 (afst $ foldMeta rest met) seg'
+        FoldGroup rest -> withDict rest $ T2 (afst $ foldMeta rest met) seg'
 
 enumKeysCompressed :: IsCompressed rep r keys key
                    => Acc (Meta (rep :. r) (keys :. key))
