@@ -138,7 +138,7 @@ module Data.Array.Accelerate.Tabular (
 
 -- *** Flow control
 , (?), match, cond, select, while, iterate
-, Assert(assert, assertMessage)
+, assert, assertMessage
 
 -- *** Logical operations
 , (&&), (&&!), (||), (||!), not
@@ -200,7 +200,7 @@ module Data.Array.Accelerate.Tabular (
 , CShort, CUShort, CInt, CUInt, CLong, CULong, CLLong, CULLong
 , CChar, CSChar, CUChar
 
-, A.Acc, A.Arrays, A.Elt
+, Acc, Arrays, Elt
 ) where
 
 import Prelude (type (~))
