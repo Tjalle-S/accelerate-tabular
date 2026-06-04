@@ -99,20 +99,22 @@ instance (Fold rep keys, IndexKey key) =>
 
   foldMeta d dmet@DenseMeta { met, n } =
     case d of
-      FoldKeep ->
-        let T2 _ seg = foldMeta FoldKeep met
-            len      = sum seg
-            seg'     = fill (I1 $ the len) (the n)
-        in  T2 dmet seg'
-      FoldGroup FoldKeep ->
-        let T2 met' seg = foldMeta FoldKeep met
-            len         = sum seg
-            seg'        = fill (I1 $ the len) (the n)
-        in  T2 met' seg'
-      FoldGroup rest -> withDict rest $
-        let T2 met' seg = foldMeta rest met
-            seg'        = map (* the n) seg
-        in  T2 met' seg'
+      FKeep ->
+        let (T2 _ seg, _) = foldMeta FKeep met
+            len           = sum seg
+            seg'          = fill (I1 $ the len) (the n)
+        in  (T2 dmet seg', Dict')
+      FGroup FKeep ->
+        let (T2 met' seg, _) = foldMeta FKeep met
+            len              = sum seg
+            seg'             = fill (I1 $ the len) (the n)
+        in  (T2 met' seg', Dict')
+      FGroup rest -> 
+        let (res, prf) = foldMeta rest met
+        in  withDict' prf $
+          let T2 met' seg = withDict' prf res
+              seg'        = map (* the n) seg
+          in  (T2 met' seg', Dict')
 
 
 -- Local utilities.

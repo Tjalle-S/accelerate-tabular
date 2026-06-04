@@ -12,6 +12,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE BlockArguments #-}
 
 module Data.Array.Accelerate.Tabular.Rep.Singleton (
   UnsafeCompleteSingleton
@@ -29,6 +30,7 @@ import Prelude (type (~))
 
 import Data.Proxy
 import Data.Array.Accelerate.Control.Monad
+import qualified Prelude as P
 
 
 -- | Stores a single key on this level for each key in the parent levels.
@@ -88,13 +90,38 @@ instance (Rep rep keys, Eq key) =>
     enumKeys SingletonMeta { met, ks } = zipWithChecked (::.) (enumKeys met) ks
 
 
-instance (Fold rep keys, Eq key) =>
-  Fold (rep :. UnsafeCompleteSingleton) (keys :. key) where
+instance (Fold rep keys, Eq key) => Fold (rep :. UnsafeCompleteSingleton) (keys :.key) where
 
-  foldMeta d dmet@SingletonMeta { met } =
+  foldMeta d dmet@(Meta_ (T2 met _)) =
     case d of
-      FoldKeep       -> T2 dmet (asnd $ foldMeta FoldKeep met)
-      FoldGroup rest -> foldMeta rest met
+      FKeep -> let (res, _) = foldMeta FKeep met
+               in  (T2 dmet (asnd res), Dict')
+      FGroup rest -> foldMeta rest met
+      
+      --foldMeta rest met
+      -- FGroup rest -> foldMeta rest met
+
+    -- case d of
+    --   FKeep -> let (res, prf) = foldMeta FKeep met 
+    --            in  undefined
+              --  in  case prf of
+              --        Dict' -> let seg = asnd res
+              --                 in  (T2 dmet seg, Dict')
+
+-- instance (Fold rep keys, Eq key) =>
+--   Fold (rep :. UnsafeCompleteSingleton) (keys :. key) where
+
+--   foldMeta d dmet@SingletonMeta { met } =
+--     case d of
+--       FKeep       -> let (res, prf) = foldMeta FKeep met
+--                      in  case prf of
+--                            Dict' -> let seg = asnd res
+--                                     in  (T2 dmet seg, Dict')
+--         -- (T2 dmet (asnd $ P.fst $ foldMeta FKeep met), Dict')
+--       FGroup rest -> let (res, prf) = foldMeta rest met
+--                      in  case prf of
+--                            Dict' -> (res, Dict')
+        -- foldMeta rest met
   
 
 instance (Index rep keys, Eq key) =>
