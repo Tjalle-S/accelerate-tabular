@@ -175,6 +175,6 @@ genProperties [''Ordered]
 -- This orphan instance might be better of in Accelerate itself.
 -- However, this would be slightly superfluous, since only integers are used there.
 -- instance Eq (sh :. Int) is already present.
-instance (Eq tail, Eq head) => Eq (tail :. head) where
+instance {-# INCOHERENT #-} (Eq tail, Eq head) => Eq (tail :. head) where
   x == y = indexHead x == indexHead y &&! indexTail x == indexTail y
   x /= y = indexHead x /= indexHead y ||! indexTail x /= indexTail y

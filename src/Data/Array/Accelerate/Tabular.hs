@@ -16,6 +16,11 @@ module Data.Array.Accelerate.Tabular (
 , UnsafeCompleteSingleton
 , Hashed
 
+-- ** Using custom key types.
+, SugarR
+, Sugar
+, Id, G
+
 -- ** 0-dimensional (scalar) tables.
 , Scalar
 , the, unit
@@ -215,3 +220,5 @@ import Data.Array.Accelerate.Tabular.Rep
 
 import Data.Array.Accelerate.Tabular.Classes.IndexKey
 import Data.Array.Accelerate.Tabular.Classes.Slice
+import Data.Array.Accelerate.Tabular.Rep.Sugar
+import Data.Array.Accelerate.Tabular.Classes.Sugar

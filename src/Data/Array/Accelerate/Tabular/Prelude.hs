@@ -15,6 +15,8 @@ module Data.Array.Accelerate.Tabular.Prelude (
 
 , innerjoin, leftouterjoin, rightouterjoin, fullouterjoin
 
+, tableDesugar, tableSugar
+
 , module Tabular.Prelude
 ) where
 
@@ -23,6 +25,7 @@ import Data.Array.Accelerate.Data.Functor
 import Data.Array.Accelerate.Data.Maybe
 
 import Data.Array.Accelerate.Tabular.Classes.Rep
+import Data.Array.Accelerate.Tabular.Classes.Sugar
 import Data.Array.Accelerate.Tabular.Prelude.Assocs  as Tabular.Prelude
 import Data.Array.Accelerate.Tabular.Prelude.Filter  as Tabular.Prelude
 import Data.Array.Accelerate.Tabular.Prelude.Fold    as Tabular.Prelude
@@ -32,6 +35,7 @@ import Data.Array.Accelerate.Tabular.Prelude.Reindex as Tabular.Prelude
 import Data.Array.Accelerate.Tabular.Prelude.Slice   as Tabular.Prelude
 import Data.Array.Accelerate.Tabular.Prelude.Table   as Tabular.Prelude
 import Data.Array.Accelerate.Tabular.Prelude.Zip     as Tabular.Prelude
+import Data.Array.Accelerate.Tabular.Rep.Sugar
 import Data.Array.Accelerate.Tabular.Util (singleton)
 
 -- | Construct a single-elemement table from a scalar value.
@@ -128,3 +132,13 @@ fullouterjoin f dx dy xs ys =
             yvs
             (indexMany xs yks)
   in  createTable (kvs1 ++ kvs2)
+
+tableDesugar :: (Rep (SugarR c rep) key, Elt val)
+             => Acc (Table (SugarR c rep) key                val)
+             -> Acc (Table rep          (Underlying c key) val)
+tableDesugar Table_ { meta_, vals_ } = Table_ (toUnderlyingMeta meta_) vals_ 
+
+tableSugar :: (Rep (SugarR c rep) key, Elt val)
+             => Acc (Table rep          (Underlying c key) val)
+             -> Acc (Table (SugarR c rep) key                val)
+tableSugar Table_ { meta_, vals_ } = Table_  (toSurfaceMeta meta_) vals_

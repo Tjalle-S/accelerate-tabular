@@ -29,7 +29,7 @@ import Data.Array.Accelerate (inspectCompiler)
 -- import Data.Array.Accelerate.Tabular.Classes.Rep (Rep(orderedCreateMeta))
 
 -- type I2 = Z :. Int :. Int
--- type D2 = Z :. Dense :. Dense
+type D2 = Z :. Dense :. Dense
 
 -- type CD = Z :. OrdCompressed :. Dense
 
@@ -48,7 +48,7 @@ import Data.Array.Accelerate (inspectCompiler)
 main :: Prelude.IO ()
 main = 
   let kvs = use [(Z :. 0 :. 0, 0.0), (Z :. 0 :. 1, 0.1), (Z :. 1 :. 0, 1.0), (Z :. 1 :. 1, 1.1)]
-  in  Prelude.print $ run $ slice (Z_ ::. Keep_ ::. Fix_ 1) $ createTable @(Z :. Dense :. Dense) @(Z :. Int :. Int) @Float kvs
+  in  Prelude.print $ run $ slice (Z_ ::. Keep_ ::. Slice_ 1) $ createTable @(Z :. Dense :. Dense) @(Z :. Int :. Int) @Float kvs
 
 type Key = Z :. Int :. Int
 

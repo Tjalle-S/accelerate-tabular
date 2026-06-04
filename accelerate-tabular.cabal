@@ -31,6 +31,7 @@ library
       Data.Array.Accelerate.Tabular.Classes.IndexKey
       Data.Array.Accelerate.Tabular.Classes.Rep
       Data.Array.Accelerate.Tabular.Classes.Slice
+      Data.Array.Accelerate.Tabular.Classes.Sugar
       Data.Array.Accelerate.Tabular.Monoid
       Data.Array.Accelerate.Tabular.Prelude
       Data.Array.Accelerate.Tabular.Prelude.Assocs
@@ -50,6 +51,7 @@ library
       Data.Array.Accelerate.Tabular.Rep.Offset
       Data.Array.Accelerate.Tabular.Rep.Range
       Data.Array.Accelerate.Tabular.Rep.Singleton
+      Data.Array.Accelerate.Tabular.Rep.Sugar
       Data.Array.Accelerate.Tabular.Util
   other-modules:
       Paths_accelerate_tabular
