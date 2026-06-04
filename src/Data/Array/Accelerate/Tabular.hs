@@ -45,7 +45,7 @@ module Data.Array.Accelerate.Tabular (
 -- If the order in which keys are stored in phyical memory is predictable,
 -- folds with non-commutative combination functions can be used as well.
 -- These may however be less efficient than using a commutative fold.
-, foldNonCommutative
+, foldNonCommutative, fold1NonCommutative
 -- *** Describing folds
 , Keep (..), Group (..)
 , FoldDescriptor

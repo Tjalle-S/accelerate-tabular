@@ -11,9 +11,6 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 
--- {-# OPTIONS_GHC -Wno-missing-signatures #-}
--- {-# OPTIONS_GHC -Wmissing-exported-signatures #-}
-
 module Data.Array.Accelerate.Tabular.Rep.Compressed (
   Compressed
 , OrdCompressed
@@ -104,10 +101,6 @@ instance (Rep rep keys, Ord key) =>
 
   enumKeys = enumKeysCompressed
 
-  
-
-
-
 
 instance (Fold rep keys, Ord key) =>
   Fold (rep :. OrdCompressed) (keys :. key) where
@@ -182,18 +175,20 @@ emptyCompressed = let s = fill (I1 1) 0
 --
 foldCompressed :: ( IsCompressed rep r keys key
                   , Fold rep keys
-                  , FoldDescriptor (rep :. r) (keys :. key) desc
+                  -- , FoldDescriptor (rep :. r) (keys :. key) desc
                   )
-               => FoldDescriptor' (rep :. r) (keys :. key) desc
+               => FoldDescriptor' (keys :. key) desc
                -> Acc (Meta (rep :. r) (keys :. key))
-               -> Acc ( Meta (FoldResult (rep  :. r)   desc)
+               -> (Acc ( Meta (FoldResult (rep  :. r)   desc)
                              (FoldResult (keys :. key) desc)
-                      , Segments Int)
+                      , Segments Int), Dict' Arrays (Meta (FoldResult (rep :. r) desc) (FoldResult (keys :. key) desc)))
 foldCompressed d cmet@CompressedMeta { met, seg } = 
   let seg' = stencil (\(l, m, _) -> m - l) (function $ const 0) seg
   in  case d of
-        FoldKeep       -> T2 cmet seg'
-        FoldGroup rest -> withDict rest $ T2 (afst $ foldMeta rest met) seg'
+        FKeep       -> (T2 cmet seg', Dict')
+        FGroup rest ->
+          let (res, prf) = foldMeta rest met
+          in  withDict' prf (T2 (afst res) seg', Dict')
 
 enumKeysCompressed :: IsCompressed rep r keys key
                    => Acc (Meta (rep :. r) (keys :. key))

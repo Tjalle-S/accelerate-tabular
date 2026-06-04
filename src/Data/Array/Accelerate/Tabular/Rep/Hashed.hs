@@ -20,7 +20,6 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE BlockArguments #-}
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
-{-# LANGUAGE InstanceSigs #-}
 
 module Data.Array.Accelerate.Tabular.Rep.Hashed (
   Hashed
@@ -118,27 +117,28 @@ instance (Index rep keys, Eq key, Hashable key) =>
     in  fromJust $ lookupHash hset i b
 
 
-
 instance (Fold rep keys, Eq key, Hashable key) =>
   Fold (rep :. Hashed) (keys :. key) where
 
   foldMeta d hmet@HashedMeta { met, hset } =
     let n = the $ width hset
     in  case d of
-          FoldKeep ->
-            let T2 _ seg = foldMeta FoldKeep met
-                len      = sum seg
-                seg'     = fill (I1 $ the len) n
-            in  T2 hmet seg'
-          FoldGroup FoldKeep ->
-            let T2 met' seg = foldMeta FoldKeep met
-                len         = sum seg
-                seg'        = fill (I1 $ the len) n
-            in  T2 met' seg'
-          FoldGroup rest -> withDict rest $ 
-            let T2 met' seg = foldMeta rest met
-                seg'        = map (* n) seg
-            in  T2 met' seg'
+          FKeep ->
+            let (T2 _ seg, _) = foldMeta FKeep met
+                len           = sum seg
+                seg'          = fill (I1 $ the len) n
+            in  (T2 hmet seg', Dict')
+          FGroup FKeep ->
+            let (T2 met' seg, _) = foldMeta FKeep met
+                len              = sum seg
+                seg'             = fill (I1 $ the len) n
+            in  (T2 met' seg', Dict')
+          FGroup rest -> 
+            let (res, prf) = foldMeta rest met
+            in  withDict' prf
+              let T2 met' seg = res
+                  seg'        = map (* n) seg
+              in  (T2 met' seg', Dict')
   
 
 -- Local utilities.

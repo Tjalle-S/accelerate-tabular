@@ -10,27 +10,26 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE InstanceSigs #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE UndecidableSuperClasses #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
+{-# LANGUAGE RankNTypes #-}
+
 
 module Data.Array.Accelerate.Tabular.Classes.Fold (
   Fold (..)
 , FoldDescriptor (..)
 , FoldDescriptor' (..)
 , Group (..), Keep (..), pattern Keep_
-, FoldResult
-, Dict' (..), withDict
+, FoldIfSnoc, FoldResult, Unsnoc
+, Dict' (..), withDict'
 ) where
 
 import Data.Array.Accelerate
 
 import Data.Array.Accelerate.Tabular.Classes.Rep
 
-
-import Data.Proxy
+import Data.Kind
 
 -- Every type that is an instance of Rep should also be an instance of Fold.
 --
@@ -38,88 +37,87 @@ import Data.Proxy
 -- involving keys not defined using '(:.)'.
 --
 
-class (Rep rep key) => Fold rep key where
+class (Rep rep key, FoldIfSnoc rep key) => Fold rep key where
 
   -- | Compute the metadata for the table resulting from performing a fold,
   -- and the segment descriptor for performing the fold.
   --
-  foldMeta :: FoldDescriptor  rep key desc
-           => FoldDescriptor' rep key desc
+  foldMeta :: FoldDescriptor' key desc
            -> Acc (Meta rep key)
-           -> Acc ( Meta (FoldResult rep desc) (FoldResult key desc)
+           -> (Acc ( Meta (FoldResult rep desc) (FoldResult key desc)
                   , Segments Int
-                  )
+                  ), Dict' Arrays (Meta (FoldResult rep desc) (FoldResult key desc)))
+
 
 instance Fold Z Z where
 
-  foldMeta :: forall desc . FoldDescriptor Z Z desc
-           => FoldDescriptor' Z Z desc
-           -> Acc (Meta Z Z)
-           -> Acc (Meta (FoldResult Z desc) (FoldResult Z desc), Segments Int)
-  foldMeta _ _ = let seg = fill (I1 1) 1
-                 in  case getDict (Proxy @Z) (Proxy @Z) (Proxy @desc) of 
-                       Dict' -> T2 emptyMeta seg
+  foldMeta FKeep met = (T2 met (fill (I1 1) $ length (enumKeys met)), Dict')
 
 
+-- | If the given @key@ consists has the shape @(keys :. key)@,
+-- @'Fold' ('Unsnoc' rep)@ keys should hold as well.
+type FoldIfSnoc :: Type -> Type -> Constraint
+type family FoldIfSnoc rep key where
+  FoldIfSnoc rep (keys :. key) = Fold (Unsnoc rep) keys
+  FoldIfSnoc _          _      = ()
+
+-- | The type with the innermost dimension removed, if present.
+-- 
+-- >>> :t Unsnoc (Z :. Int :. Int)
+-- Z :. Int
+type Unsnoc :: Type -> Type
+type family Unsnoc t where
+  Unsnoc (ks :. k) = ks
+  Unsnoc a         = a
+
+-- | Describes the result of folding over a representation or key
+-- with a given descriptor.
+--
+type FoldResult :: Type -> Type -> Type
+type family FoldResult t desc where
+  FoldResult t Keep            = t
+  FoldResult t (desc :. Group) = FoldResult (Unsnoc t) desc
+
+-- | Retain this and previous dimensions in their entirety.
+--
 data Keep  = Keep
   deriving (Generic, Elt)
+
+-- | Fold over this dimension.
+--
 data Group = Group
 
 pattern Keep_ :: Exp Keep
 pattern Keep_ = Pattern ()
 
-class (Rep rep key) => FoldDescriptor rep key desc where
+-- | Types that can be used to describe the dimensions to fold over.
+--
+class FoldDescriptor key desc where
 
-  -- | Get a value describing the structure of the descriptor.
+  -- | Get the underlying descriptor data type.
   --
-  getDescriptor :: Proxy desc -> FoldDescriptor' rep key desc
-  -- Note that the use of Proxy here is not strictly required.
-  -- However, having it allows the fold function to be used as e.g.
-  -- `fold (Keep :. Group)` instead of of `fold (Proxy @(Keep :. Group))`.
-  -- 
+  getDescriptor :: FoldDescriptor' key desc
 
-  getDict :: Proxy rep -> Proxy key -> Proxy desc -> Dict' (Rep (FoldResult rep desc)) (FoldResult key desc)
+instance FoldDescriptor key Keep where
+  getDescriptor = FKeep
 
+instance (FoldDescriptor keys desc)
+  => FoldDescriptor (keys :. key) (desc :. Group) where
+
+  getDescriptor = FGroup getDescriptor
+
+-- | The datatype underlying 'FoldDescriptor'.
+-- The dimensions to fold over can be determined by pattern matching on this.
+--
+data FoldDescriptor' key desc where
+  FKeep  :: FoldDescriptor' key  Keep
+  FGroup :: FoldDescriptor' keys desc
+         -> FoldDescriptor' (keys :. key) (desc :. Group)
+
+-- | A value of type @'Dict'' c a@ provides evidence that the constraint @c e@ holds.
 data Dict' c a where
   Dict' :: c a => Dict' c a
 
-withDict :: forall rep key desc r
-         .  FoldDescriptor rep key desc
-         => FoldDescriptor' rep key desc
-         -> (Rep (FoldResult rep desc) (FoldResult key desc) => r)
-         -> r
-withDict _ f =
-  case getDict (Proxy @rep) (Proxy @key) (Proxy @desc) of
-    Dict' -> f
-
-
-instance (Rep rep key) => FoldDescriptor rep key Keep where
-
-  getDescriptor _ = FoldKeep
-
-  getDict _ _ _ = Dict'
-
-instance ( FoldDescriptor rep keys desc, Rep rep' keys'
-         , rep' ~ (rep :. r), keys' ~ (keys :. key)) =>
-  FoldDescriptor rep' keys' (desc :. Group) where
-
-  getDescriptor _ = FoldGroup (getDescriptor Proxy)
-
-  getDict _ _ _ = case getDict (Proxy @rep) (Proxy @keys) (Proxy @desc) of
-                    Dict' -> Dict'
-
--- | Describes the structure of a fold descriptor in a single data type,
--- to allow pattern matching.
---
-data FoldDescriptor' rep key desc where
-  FoldKeep  :: FoldDescriptor' rep key  Keep
-  FoldGroup :: FoldDescriptor  rep keys desc
-            => FoldDescriptor' rep keys desc
-            -> FoldDescriptor' (rep :. r) (keys :. key) (desc :. Group)
-
--- | Describes the result of folding over a representation
--- with a given descriptor.
---
-type family FoldResult t desc where
-  FoldResult t            Keep             = t
-  FoldResult (tail :. _) (desc :. Group) = FoldResult tail desc
+withDict' :: Dict' c a -> (c a => r) -> r
+withDict' d f = case d of
+  Dict' -> f
