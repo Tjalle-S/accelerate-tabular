@@ -25,18 +25,18 @@ import Data.Type.Equality
 -- | Index a table with a generalised key.
 -- This can be used to cut out entire dimensions from the table.
 --
-slice :: forall rep key desc val rep' key'
+slice :: forall rep' rep key desc val key'
       .  ( NotScalar key, NotScalar (SliceResult key desc)
          , Rep rep key
+         , Rep rep' (SliceResult key desc)
          , SliceDescriptor key desc
          , Elt val
-         , Rep rep' key'
-         , rep' ~ SliceResult rep desc
+        --  , rep' ~ SliceResult rep desc
          , key' ~ SliceResult key desc
          )
       => Exp desc
       -> Acc (Table rep key val)
-      -> Acc (Table (SliceResult rep desc) (SliceResult key desc) val)
+      -> Acc (Table rep' (SliceResult key desc) val)
 slice desc = 
   let d = getSliceDescriptor desc
       t = toTransform d
@@ -51,8 +51,7 @@ toPredicate SliceZ            _          = True_
 toPredicate (SliceKeep d)     (k  ::. _) = toPredicate d k
 toPredicate (SliceIndex d k') (ks ::. k) = k == k' && toPredicate d ks
 
-toTransform :: (Elt (SliceResult key desc))
-            => SliceDescriptor' key desc
+toTransform :: SliceDescriptor' key desc
             -> Exp key
             -> Exp (SliceResult key desc)
 toTransform SliceZ           _          = Z_
