@@ -20,6 +20,8 @@
 {-# LANGUAGE DefaultSignatures #-}
 
 {-# OPTIONS_GHC -Wno-orphans #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
+{-# LANGUAGE UndecidableSuperClasses #-}
 
 module Data.Array.Accelerate.Tabular.Classes.Rep (
   module Data.Array.Accelerate.Tabular.Classes.Rep
@@ -36,7 +38,7 @@ import qualified Prelude as P
 
 -- | Possible representations for tables with a given key type.
 --
-class (Eq key, Arrays (MetaR rep key), Typeable (Ordered rep), Typeable (FastIndex rep)) => Rep rep key where
+class (Eq key, Arrays (MetaR rep key), Typeable (Ordered rep), Typeable (FastIndex rep), IfSnoc Rep rep key) => Rep rep key where
 
   -- | The metadata necessary for storing the keys, and associating them with
   -- a vector of values.
@@ -146,7 +148,8 @@ data MaybeDict :: Bool -> Constraint -> Type where
 
 -- | Representations that support efficient indexing.
 --
-class (Rep rep key, FastIndex rep ~ True) => Index rep key where
+class (Rep rep key, FastIndex rep ~ True, IfSnoc Index rep key)
+  => Index rep key where
   
   -- | Convert a key into an index into the value array.
   -- No additional checks are performed.
@@ -177,6 +180,22 @@ instance Index Z Z where
   unsafeToLinearIndices _ ks = fill (shape ks) 0
   toLinearIndices       _ ks = fill (shape ks) (Just_ 0)
 
+-- | If the given key has the shape @(keys ':.' key)@,
+-- the constraint should hold for @'Unsnoc' rep@ and @keys@ (as well).
+--
+type IfSnoc :: (Type -> Type -> Constraint) -> Type -> Type -> Constraint
+type family IfSnoc c rep key where
+  IfSnoc c rep (keys :. key) = c (Unsnoc rep) keys
+  IfSnoc _ _   _             = ()
+  
+-- | The type with the innermost dimension removed, if present.
+-- 
+-- >>> :t Unsnoc (Z :. Int :. Int)
+-- Z :. Int
+type Unsnoc :: Type -> Type
+type family Unsnoc t where
+  Unsnoc (ks :. k) = ks
+  Unsnoc a         = a
 
 -- Generate helper functions and constraints for checking properties.
 genProperties [''Ordered]

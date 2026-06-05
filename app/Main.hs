@@ -23,6 +23,7 @@
 -- {-# LANGUAGE DeriveGeneric #-}
 -- {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 
 module Main (main) where
 
@@ -73,37 +74,29 @@ import Control.Applicative (Const)
 
 
 main :: Prelude.IO ()
-main = 
-  let kvs = use [(Z :. 0 :. 0, 0.0), (Z :. 0 :. 1, 0.1), (Z :. 1 :. 0, 1.0), (Z :. 1 :. 1, 1.1)]
-  in  Prelude.print $ run $ slice (Z_ ::. Keep_ ::. Slice_ 1) $ createTable @(Z :. Dense :. Dense) @(Z :. Int :. Int) @Float kvs
+main = undefined
+  -- let kvs = use [(Z :. 0 :. 0, 0.0), (Z :. 0 :. 1, 0.1), (Z :. 1 :. 0, 1.0), (Z :. 1 :. 1, 1.1)]
+  -- in  Prelude.print $ run $ slice (Z_ ::. Keep_ ::. Slice_ 1) $ createTable @(Z :. Dense :. Dense) @(Z :. Int :. Int) @Float kvs
 
 type Key = Z :. Int :. Int
 
 inf :: Exp Float
 inf = 1 / 0
 
-apsp :: forall rep . (Fold rep Key) => Acc (Table rep Key Float) -> Acc (Table rep Key Float)
-apsp ds = afor (A.unit n) undefined ds
+apsp :: forall rep r1 r2. (Slice rep Key, rep ~ (Z :. r1 :. r2)) => Acc (Table rep Key Float) -> Acc (Table rep Key Float)
+apsp ds = afor (A.unit n) update ds
   where
     Z_ ::. n' ::. n'' = A.the $ A.maximum $ keys ds
     n = max n' n''
 
-    update :: Acc (A.Scalar Int) -> Acc (Table rep Key Float) -> Acc (Table rep Z Float)
+    update :: Acc (A.Scalar Int) -> Acc (Table rep Key Float) -> Acc (Table rep Key Float)
     update ak d = let k = A.the ak
-                      -- test = fold (FKeep .: FGroup) (+) 0 d
-                      test2 = fold (Keep :. Group) (+) 0 d
-                      -- test4 = fold (FKeep .: FGroup)
-                      test3 = map (+ 2) test2--fold' (Keep :. Group) (+) 0 test
-                      -- should be slice instead of filter
-                      -- toK   = slice (Z_ ::. Keep_    ::. Slice_ k) d
-                      -- fromK = slice (Z_ ::. Slice_ k ::. Keep_)    d
+                      toK   = slice @(Z :. r1) (Z_ ::. Keep_    ::. Slice_ k) d
+                      fromK = slice @(Z :. r1) (Z_ ::. Slice_ k ::. Keep_)    d
+
                       --added = cartesianWith @rep (+) toK fromK
                   in  undefined --fullouterjoin @rep min inf inf d added
 
-test :: (Fold rep Key, rep ~ (Z :. r1 :. r2)) => Acc (Table rep Key Float) -> Acc (Table Z Z Float)
-test d = let t1 = fold (Keep :. Group) (+) 0 d
-             t2 = fold (Keep :. Group) (+) 0 t1
-         in t2
 
 afor :: (Arrays a) => Acc (A.Scalar Int)
                    -> (Acc (A.Scalar Int) -> Acc a -> Acc a)

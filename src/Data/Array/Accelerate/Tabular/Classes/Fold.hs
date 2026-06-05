@@ -21,7 +21,7 @@ module Data.Array.Accelerate.Tabular.Classes.Fold (
 , FoldDescriptor (..)
 , FoldDescriptor' (..)
 , Group (..), Keep (..), pattern Keep_
-, FoldIfSnoc, FoldResult, Unsnoc
+, FoldResult
 , Dict' (..), withDict'
 ) where
 
@@ -37,7 +37,7 @@ import Data.Kind
 -- involving keys not defined using '(:.)'.
 --
 
-class (Rep rep key, FoldIfSnoc rep key) => Fold rep key where
+class (Rep rep key, IfSnoc Fold rep key) => Fold rep key where
 
   -- | Compute the metadata for the table resulting from performing a fold,
   -- and the segment descriptor for performing the fold.
@@ -52,23 +52,6 @@ class (Rep rep key, FoldIfSnoc rep key) => Fold rep key where
 instance Fold Z Z where
 
   foldMeta FKeep met = (T2 met (fill (I1 1) $ length (enumKeys met)), Dict')
-
-
--- | If the given @key@ consists has the shape @(keys :. key)@,
--- @'Fold' ('Unsnoc' rep)@ keys should hold as well.
-type FoldIfSnoc :: Type -> Type -> Constraint
-type family FoldIfSnoc rep key where
-  FoldIfSnoc rep (keys :. key) = Fold (Unsnoc rep) keys
-  FoldIfSnoc _          _      = ()
-
--- | The type with the innermost dimension removed, if present.
--- 
--- >>> :t Unsnoc (Z :. Int :. Int)
--- Z :. Int
-type Unsnoc :: Type -> Type
-type family Unsnoc t where
-  Unsnoc (ks :. k) = ks
-  Unsnoc a         = a
 
 -- | Describes the result of folding over a representation or key
 -- with a given descriptor.
