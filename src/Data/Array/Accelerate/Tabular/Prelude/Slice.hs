@@ -21,6 +21,7 @@ import Data.Array.Accelerate.Tabular.Prelude.Table
 import Data.Array.Accelerate.Tabular.Prelude.Reindex
 
 import Data.Type.Equality
+import Lens.Micro
 
 -- | Index a table with a generalised key.
 -- This can be used to cut out entire dimensions from the table.
@@ -37,12 +38,12 @@ slice :: forall rep' rep key desc val key'
       => Exp desc
       -> Acc (Table rep key val)
       -> Acc (Table rep' (SliceResult key desc) val)
-slice desc = 
+slice desc tab = 
   let d = getSliceDescriptor desc
       t = toTransform d
       p = (\k _ -> toPredicate d k)
-  in    reindexUnique @rep' t
-      . filter @rep p
+      kvs = filter' p tab
+  in  createTable' (assumeOrdered tab) (map (over _1 t) kvs)
 
 toPredicate :: SliceDescriptor' key desc
             -> Exp key

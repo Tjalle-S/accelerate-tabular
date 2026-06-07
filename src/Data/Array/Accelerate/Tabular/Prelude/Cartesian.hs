@@ -28,7 +28,7 @@ cartesianWith :: forall rep'' rep' rep key'' key' key c b a
               . ( Key key, Key key', Key key''
                 , Rep rep key, Rep rep' key', Rep rep'' key''
                 , Elt a, Elt b, Elt c
-                , key'' ~ key ++ key'
+                , key'' ~ (key ++ key')
                 )
               => (Exp a -> Exp b -> Exp c)
               -> Acc (Table rep key a)

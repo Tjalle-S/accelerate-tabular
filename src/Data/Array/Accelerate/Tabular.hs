@@ -59,10 +59,9 @@ module Data.Array.Accelerate.Tabular (
 , inner, inner1, inner2, inner3
 
 -- ** Slicing tables
--- , Slice(..)
 , slice
 , SliceFix (..), pattern Slice_
--- , SliceDescriptor
+, SliceDescriptor
 , SliceResult
 
 -- ** Reindexing tables

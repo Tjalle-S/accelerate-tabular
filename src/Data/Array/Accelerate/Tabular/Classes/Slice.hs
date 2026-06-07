@@ -20,8 +20,7 @@
 
 
 module Data.Array.Accelerate.Tabular.Classes.Slice (
-  Slice
-, SliceFix (..), pattern Slice_
+  SliceFix (..), pattern Slice_
 , SliceDescriptor (..)
 , SliceDescriptor' (..)
 , SliceResult
@@ -56,15 +55,6 @@ mkPattern ''SliceFix
 -- However, it may be necessary to keep them apart, for syntactic sugar
 -- involving keys not defined using '(:.)'.
 --
-
-class (Rep rep key)
-  => Slice rep key where
-
-  -- type SliceKeepResult rep desc
-  -- type SliceFixResult  rep desc
-
-
-instance Slice Z Z where
 
 class (Elt key, Elt (SliceResult key desc), Elt desc)
   => SliceDescriptor key desc where
