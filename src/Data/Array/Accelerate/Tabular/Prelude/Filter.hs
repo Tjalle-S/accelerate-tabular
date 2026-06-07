@@ -3,7 +3,7 @@
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
 module Data.Array.Accelerate.Tabular.Prelude.Filter (
-  filter
+  filter, filter'
 ) where
 
 import Data.Array.Accelerate hiding ( filter )
@@ -20,10 +20,17 @@ filter :: (Rep rep' key, NotScalar key, Rep rep key, Elt val)
        => (Exp key -> Exp val -> Exp Bool)
        -> Acc (Table rep  key val)
        -> Acc (Table rep' key val)
-filter p tab =
+filter p tab = createTable' (assumeOrdered tab) (filter' p tab)
+
+-- | Variant of 'filter' that does not construct the result table.
+-- Used internally.
+--
+filter' :: (Rep rep key, Elt val)
+        => (Exp key -> Exp val -> Exp Bool)
+        -> Acc (Table rep key val)
+        -> Acc (Vector (key, val))
+filter' p tab = 
   let kvs   = massocs tab
-  in  createTable' (assumeOrdered tab)
-        $ afst
-        $ compact
-          (A.map (maybe False_ $ uncurry p) kvs)
-          (A.map fromJust                   kvs)
+  in  afst $ compact
+        (A.map (maybe False_ $ uncurry p) kvs)
+        (A.map fromJust                   kvs)

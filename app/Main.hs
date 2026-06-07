@@ -39,22 +39,22 @@ import Data.Array.Accelerate.Tabular hiding (Assert)
 -- import qualified Data.Array.Accelerate.Tabular.Prelude.Zip as Z
 -- import Data.Array.Accelerate.Tabular.Util (lookupMany)
 import Data.Array.Accelerate.Tabular.Prelude
-import Data.Array.Accelerate.Tabular.Classes.Slice
-import Data.Array.Accelerate.Tabular.Prelude.Slice
-import Data.Array.Accelerate.Tabular.Classes.Fold
+-- import Data.Array.Accelerate.Tabular.Classes.Slice
+-- import Data.Array.Accelerate.Tabular.Prelude.Slice
+-- import Data.Array.Accelerate.Tabular.Classes.Fold
 import Data.Array.Accelerate (inspectCompiler)
--- import Data.Array.Accelerate.Tabular.Prelude.Cartesian (cartesianWith)
-import Data.Kind
-import GHC.TypeError
-import Data.Data
-import Data.Array.Accelerate.Tabular.Util
+import Data.Array.Accelerate.Tabular.Prelude.Cartesian (cartesianWith)
+-- import Data.Kind
+-- import GHC.TypeError
+-- import Data.Data
+-- import Data.Array.Accelerate.Tabular.Util
 -- import Data.Array.Accelerate.Tabular.Classes.Rep (Rep(orderedCreateMeta))
 
-import Data.Array.Accelerate.Sugar.Array
-import qualified Data.Array.Accelerate.Representation.Array as R
-import Data.Array.Accelerate.Representation.Type (TupR(TupRpair))
-import Unsafe.Coerce (unsafeCoerce)
-import Control.Applicative (Const)
+-- import Data.Array.Accelerate.Sugar.Array
+-- import qualified Data.Array.Accelerate.Representation.Array as R
+-- import Data.Array.Accelerate.Representation.Type (TupR(TupRpair))
+-- import Unsafe.Coerce (unsafeCoerce)
+-- import Control.Applicative (Const)
 
 -- type I2 = Z :. Int :. Int
 -- type D2 = Z :. Dense :. Dense
@@ -74,7 +74,7 @@ import Control.Applicative (Const)
 
 
 main :: Prelude.IO ()
-main = undefined
+main = Prelude.print $ run $ apsp @(Z :. Dense :. OrdCompressed) distances
   -- let kvs = use [(Z :. 0 :. 0, 0.0), (Z :. 0 :. 1, 0.1), (Z :. 1 :. 0, 1.0), (Z :. 1 :. 1, 1.1)]
   -- in  Prelude.print $ run $ slice (Z_ ::. Keep_ ::. Slice_ 1) $ createTable @(Z :. Dense :. Dense) @(Z :. Int :. Int) @Float kvs
 
@@ -83,7 +83,7 @@ type Key = Z :. Int :. Int
 inf :: Exp Float
 inf = 1 / 0
 
-apsp :: forall rep r1 r2. (Slice rep Key, rep ~ (Z :. r1 :. r2)) => Acc (Table rep Key Float) -> Acc (Table rep Key Float)
+apsp :: forall rep. (Rep rep Key) => Acc (Table rep Key Float) -> Acc (Table rep Key Float)
 apsp ds = afor (A.unit n) update ds
   where
     Z_ ::. n' ::. n'' = A.the $ A.maximum $ keys ds
@@ -91,11 +91,26 @@ apsp ds = afor (A.unit n) update ds
 
     update :: Acc (A.Scalar Int) -> Acc (Table rep Key Float) -> Acc (Table rep Key Float)
     update ak d = let k = A.the ak
-                      toK   = slice @(Z :. r1) (Z_ ::. Keep_    ::. Slice_ k) d
-                      fromK = slice @(Z :. r1) (Z_ ::. Slice_ k ::. Keep_)    d
+                      toK   = A.compute $ slice @(Z :. Dense) (Z_ ::. Keep_    ::. Slice_ k) d
+                      fromK = A.compute $ slice @(Z :. Dense) (Z_ ::. Slice_ k ::. Keep_)    d
 
-                      --added = cartesianWith @rep (+) toK fromK
-                  in  undefined --fullouterjoin @rep min inf inf d added
+                      added = A.compute $ cartesianWith @rep (+) toK fromK
+                  in  fullouterjoin @rep min inf inf d added
+
+distances :: (Rep rep Key) => Acc (Table rep Key Float)
+distances = createTable (use ds)
+  where
+    ds = [ (Z :. 0 :. 1, 2)
+         , (Z :. 0 :. 2, 4)
+         , (Z :. 1 :. 3, 6)
+         , (Z :. 2 :. 3, 8)
+         ]
+
+--  0
+-- / \
+-- 1 2
+-- \ /
+--  3
 
 
 afor :: (Arrays a) => Acc (A.Scalar Int)
