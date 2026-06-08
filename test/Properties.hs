@@ -30,8 +30,7 @@ import Gen
 
 
 createPreservesAssocs :: forall rep key val
-                      .  ( NotScalar key
-                         , Show key, Show val
+                      .  ( Show key, Show val
                          , P.Ord key, P.Ord val
                          , Ord val
                          , Rep rep key
@@ -52,11 +51,10 @@ createPreservesAssocs runN _ gen = property $ do
   assert $  kvs' `isPermutationOf` toList kvs
 
 filterPreservesFiltered :: forall rep key val
-                        .  ( NotScalar key
-                          , Show key, Show val
-                          , P.Ord key, P.Integral val, Integral val
-                          , Rep rep key
-                          )
+                        .  ( Show key, Show val
+                           , P.Ord key, P.Integral val, Integral val
+                           , Rep rep key
+                           )
                         => RunN
                         -> Proxy rep
                         -> (DIM1 -> Gen (Vector (key, val)))
@@ -77,8 +75,7 @@ isPermutationOf xs ys = sort xs P.== sort ys
 
 
 foldAllSameAsFoldr :: forall rep key val
-                   . ( NotScalar key
-                     , Show key, Show val
+                   . ( Show key, Show val
                      , P.Eq val, P.Num val, Num val
                      , Rep rep key
                      )
@@ -98,8 +95,7 @@ foldAllSameAsFoldr runN _ gen = property $ do
   res === P.foldr ((+) . P.snd) 0 (toList kvs)
 
 indexingSameAsLookup :: forall rep key val
-                     . ( NotScalar key
-                       , Show key, Show val, Elt val
+                     . ( Show key, Show val, Elt val
                        , P.Eq key, P.Eq val
                        , Rep rep key
                        )
@@ -128,8 +124,7 @@ indexingSameAsLookup runN _ genKVs genLookups = property $ do
   res === P.map (`P.lookup` toList kvs) ks'
 
 innerJoinReference :: forall rep rep' rep'' key val
-                    . ( NotScalar key
-                      , Show key, Show val
+                    . ( Show key, Show val
                       , P.Ord key, P.Ord val, P.Num val, Num val
                       , Rep rep key
                       , Rep rep' key

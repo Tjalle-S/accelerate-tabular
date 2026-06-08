@@ -46,7 +46,7 @@ import Data.Array.Accelerate.Data.Lens ()
 -- When changing only the underlying representation, use 'reindex'' instead,
 -- or pass 'const' and 'id'.
 --
-reindex :: (NotScalar key', Rep rep key, Rep rep' key', Elt val)
+reindex :: (Rep rep key, Rep rep' key', Elt val)
         => (Exp val -> Exp val -> Exp val)
         -> (Exp key -> Exp key')
         -> Acc (Table rep  key val)
@@ -74,7 +74,7 @@ reindex combv mapk Table_ { meta_, vals_ } =
 -- | Like 'reindex', but assumes the key mapping is injective.
 --
 reindexUnique :: forall rep' key' rep key val
-              .  (NotScalar key', Rep rep key, Rep rep' key', Elt val)
+              .  (Rep rep key, Rep rep' key', Elt val)
               => (Exp key -> Exp key')
               -> Acc (Table rep  key val)
               -> Acc (Table rep' key' val)
@@ -82,7 +82,7 @@ reindexUnique = reindex const
 
 -- | Change the underlying representation of a table.
 --
-reindex' :: (NotScalar key, Rep rep key, Rep rep' key, Elt val)
+reindex' :: (Rep rep key, Rep rep' key, Elt val)
          => Acc (Table rep  key val)
          -> Acc (Table rep' key val)
 reindex' = reindex const id

@@ -64,6 +64,8 @@ concatKey' :: KeyR key -> KeyR key' -> KeyR (key ++ key')
 concatKey' key KeyRZ           = key
 concatKey' key (KeyRSnoc ks k) = KeyRSnoc (concatKey' key ks) k
 
+-- Only require this for right key (can append to anything).
+
 class (Elt key) => Key key where
 
   getKeyR :: Exp key -> KeyR key

@@ -13,8 +13,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
-{-# OPTIONS_GHC -Wno-redundant-constraints #-}
-
 module Data.Array.Accelerate.Tabular.Prelude.Table (
   Table (..)
 , Scalar
@@ -22,8 +20,6 @@ module Data.Array.Accelerate.Tabular.Prelude.Table (
 , pattern Table_, meta_, vals_
 , emptyTable, createTable', createTable, orderedCreateTable
 , assumeOrdered
-
-, NotScalar
 ) where
 
 import Data.Array.Accelerate hiding (Scalar, unit, the)
@@ -33,8 +29,6 @@ import Data.Array.Accelerate.Tabular.Classes.Rep
 
 import Control.DeepSeq (NFData)
 import Data.Array.Accelerate.Tabular.Util (emptyVector)
-import Data.Kind
-import GHC.TypeError
 import Data.Type.Equality
 import Data.Proxy
 
@@ -67,7 +61,7 @@ pattern Table_ { meta_, vals_ } = Pattern (meta_, vals_)
 
 -- | Create an empty table.
 -- 
-emptyTable :: (Rep rep key, NotScalar key, Elt val)
+emptyTable :: (Rep rep key, Elt val)
            => Acc (Table rep key val)
 emptyTable = Table_ {
   meta_ = emptyMeta
@@ -97,7 +91,7 @@ assumeOrdered _ = case isOrderedProxy @rep Proxy of
 
 -- | Construct a new table from the given keys and values.
 --
-createTable :: (Rep rep key, NotScalar key, Elt val)
+createTable :: (Rep rep key, Elt val)
             => Acc (Vector (key, val))
             -> Acc (Table rep key val)
 createTable = createTable' NoAssumeOrdered
@@ -107,15 +101,7 @@ createTable = createTable' NoAssumeOrdered
 -- It will be more efficient for most representations that require ordering, 
 -- but do not support O(1) indexing.
 --
-orderedCreateTable :: (Rep rep key, NotScalar key, Elt val)
+orderedCreateTable :: (Rep rep key, Elt val)
                    => Acc (Vector (key, val))
                    -> Acc (Table rep key val)
 orderedCreateTable = createTable' AssumeOrdered
-
--- | Allows constraining to non-scalar tables.
--- Can be used to enforce the assumptions on scalar tables.
---
-type family NotScalar key :: Constraint where
-  NotScalar Z          = TypeError (
-    Text "This operation can not be used on scalar tables (Table Z Z).")
-  NotScalar   (_ :. _) = ()

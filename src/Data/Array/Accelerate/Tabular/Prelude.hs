@@ -46,7 +46,7 @@ unit x = Table_ emptyMeta $ singleton (Just_ x)
 -- | Extract the element from a single-element table.
 --
 the :: (Elt val) => Acc (Scalar val) -> Exp val
-the = (! Z_) -- Assuming a Scalar table always contains exactly one value.
+the = fromJust . assert isJust . (!! 0) . vals_
 
 -- | Pair each element of a table with its key.
 --
@@ -58,8 +58,7 @@ indexed = imap T2
 -- Reference implementations for joins.
 
 innerjoin :: forall rep'' rep' rep key c b a
-          . ( NotScalar key
-            , Rep rep key, Rep rep' key, Rep rep'' key
+          . ( Rep rep key, Rep rep' key, Rep rep'' key
             , Elt a, Elt b, Elt c
             )
           => (Exp a -> Exp b -> Exp c)
@@ -78,8 +77,7 @@ innerjoin f xs ys =
   in  createTable' (assumeOrdered xs) kvs
 
 leftouterjoin :: forall rep'' rep' rep key c b a
-              . ( NotScalar key
-                , Rep rep key, Rep rep' key, Rep rep'' key
+              . ( Rep rep key, Rep rep' key, Rep rep'' key
                 , Elt a, Elt b, Elt c
                 )
               => (Exp a -> Exp b -> Exp c)
@@ -97,8 +95,7 @@ leftouterjoin f d xs ys =
   in  createTable' (assumeOrdered xs) kvs
 
 rightouterjoin :: forall rep'' rep' rep key c b a
-               . ( NotScalar key
-                 , Rep rep key, Rep rep' key, Rep rep'' key
+               . ( Rep rep key, Rep rep' key, Rep rep'' key
                  , Elt a, Elt b, Elt c
                  )
               => (Exp a -> Exp b -> Exp c)
@@ -109,8 +106,7 @@ rightouterjoin :: forall rep'' rep' rep key c b a
 rightouterjoin f d = flip $ leftouterjoin (flip f) d
 
 fullouterjoin :: forall rep'' rep' rep key c b a
-              . ( NotScalar key
-                , Rep rep key, Rep rep' key, Rep rep'' key
+              . ( Rep rep key, Rep rep' key, Rep rep'' key
                 , Elt a, Elt b, Elt c
                 )
               => (Exp a -> Exp b -> Exp c)

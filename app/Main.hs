@@ -22,8 +22,8 @@
 -- {-# LANGUAGE StandaloneDeriving #-}
 -- {-# LANGUAGE DeriveGeneric #-}
 -- {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE UndecidableSuperClasses #-}
-{-# LANGUAGE PartialTypeSignatures #-}
+-- {-# LANGUAGE UndecidableSuperClasses #-}
+-- {-# LANGUAGE PartialTypeSignatures #-}
 
 module Main (main) where
 
@@ -90,12 +90,13 @@ apsp ds = afor (A.unit n) update ds
     n = max n' n''
 
     update :: Acc (A.Scalar Int) -> Acc (Table rep Key Float) -> Acc (Table rep Key Float)
-    update ak d = let k = A.the ak
-                      toK   = A.compute $ slice @(Z :. Dense) (Z_ ::. Keep_    ::. Slice_ k) d
-                      fromK = A.compute $ slice @(Z :. Dense) (Z_ ::. Slice_ k ::. Keep_)    d
+    update ak d = 
+      let k = A.the ak
+          toK   = slice @(Z :. Dense) (Z_ ::. Keep_    ::. Slice_ k) d
+          fromK = slice @(Z :. Dense) (Z_ ::. Slice_ k ::. Keep_)    d
 
-                      added = A.compute $ cartesianWith @rep (+) toK fromK
-                  in  fullouterjoin @rep min inf inf d added
+          added = cartesianWith @rep (+) toK fromK
+      in  fullouterjoin @rep min inf inf d added
 
 distances :: (Rep rep Key) => Acc (Table rep Key Float)
 distances = createTable (use ds)
