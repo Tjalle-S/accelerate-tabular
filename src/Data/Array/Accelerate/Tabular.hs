@@ -20,6 +20,7 @@ module Data.Array.Accelerate.Tabular (
 , SugarR
 , Sugar
 , Id, G
+, tableDesugar, unsafeTableSugar
 
 -- ** 0-dimensional (scalar) tables.
 , Scalar

@@ -15,7 +15,7 @@ module Data.Array.Accelerate.Tabular.Prelude (
 
 , innerjoin, leftouterjoin, rightouterjoin, fullouterjoin
 
-, tableDesugar, tableSugar
+, tableDesugar, unsafeTableSugar
 
 , module Tabular.Prelude
 ) where
@@ -75,7 +75,7 @@ innerjoin f xs ys =
             xks
             xvs
             yvs
-  in  createTable kvs
+  in  createTable' (assumeOrdered xs) kvs
 
 leftouterjoin :: forall rep'' rep' rep key c b a
               . ( NotScalar key
@@ -94,7 +94,7 @@ leftouterjoin f d xs ys =
             xks
             xvs
             yvs
-  in  createTable kvs
+  in  createTable' (assumeOrdered xs) kvs
 
 rightouterjoin :: forall rep'' rep' rep key c b a
                . ( NotScalar key
@@ -133,12 +133,19 @@ fullouterjoin f dx dy xs ys =
             (indexMany xs yks)
   in  createTable (kvs1 ++ kvs2)
 
+-- | Convert a table using syntactic sugar for its keys to the underlying table.
+-- 
 tableDesugar :: (Rep (SugarR c rep) key, Elt val)
              => Acc (Table (SugarR c rep) key                val)
-             -> Acc (Table rep          (Underlying c key) val)
+             -> Acc (Table rep            (Underlying c key) val)
 tableDesugar Table_ { meta_, vals_ } = Table_ (toUnderlyingMeta meta_) vals_ 
 
-tableSugar :: (Rep (SugarR c rep) key, Elt val)
-             => Acc (Table rep          (Underlying c key) val)
-             -> Acc (Table (SugarR c rep) key                val)
-tableSugar Table_ { meta_, vals_ } = Table_  (toSurfaceMeta meta_) vals_
+-- | Convert a table to a variant using syntactic sugar for its keys.
+-- This is a potentially unsafe function, as invariants or assumptions
+-- associated with the surface key type are not checked.
+-- This is true even if such checks are present in the specified conversion.
+--
+unsafeTableSugar :: (Rep (SugarR c rep) key, Elt val)
+                 => Acc (Table rep            (Underlying c key) val)
+                 -> Acc (Table (SugarR c rep) key                val)
+unsafeTableSugar Table_ { meta_, vals_ } = Table_  (toSurfaceMeta meta_) vals_

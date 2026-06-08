@@ -107,11 +107,6 @@ distances = createTable (use ds)
          ]
 
 
-test :: Acc (Table (SugarR G (Z :. Dense)) Int Float) -> Acc (Table (SugarR G (Z :. Dense)) Int Float)
-test d = let r = slice Z_ d
-         in r
-
-
 --  0
 -- / \
 -- 1 2
