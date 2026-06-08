@@ -38,7 +38,7 @@ import qualified Prelude as P
 
 -- | Possible representations for tables with a given key type.
 --
-class (Eq key, Arrays (MetaR rep key), Typeable (Ordered rep), Typeable (FastIndex rep), IfSnoc Rep rep key) => Rep rep key where
+class (Eq key, Arrays (MetaR rep key), Typeable (Ordered rep), Typeable (FastIndex rep)) => Rep rep key where
 
   -- | The metadata necessary for storing the keys, and associating them with
   -- a vector of values.
@@ -148,7 +148,7 @@ data MaybeDict :: Bool -> Constraint -> Type where
 
 -- | Representations that support efficient indexing.
 --
-class (Rep rep key, FastIndex rep ~ True, IfSnoc Index rep key)
+class (Rep rep key, FastIndex rep ~ True)
   => Index rep key where
   
   -- | Convert a key into an index into the value array.

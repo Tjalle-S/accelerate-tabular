@@ -18,22 +18,18 @@ import Data.Array.Accelerate.Tabular.Classes.Rep
 import Data.Array.Accelerate.Tabular.Classes.Slice
 import Data.Array.Accelerate.Tabular.Prelude.Filter
 import Data.Array.Accelerate.Tabular.Prelude.Table
-import Data.Array.Accelerate.Tabular.Prelude.Reindex
 
-import Data.Type.Equality
 import Lens.Micro
+import Data.Array.Accelerate.Data.Lens ()
 
 -- | Index a table with a generalised key.
 -- This can be used to cut out entire dimensions from the table.
 --
-slice :: forall rep' rep key desc val key'
-      .  ( NotScalar key, NotScalar (SliceResult key desc)
-         , Rep rep key
+slice :: forall rep' rep key desc val
+      .  ( Slice rep key
          , Rep rep' (SliceResult key desc)
          , SliceDescriptor key desc
          , Elt val
-        --  , rep' ~ SliceResult rep desc
-         , key' ~ SliceResult key desc
          )
       => Exp desc
       -> Acc (Table rep key val)
@@ -55,6 +51,6 @@ toPredicate (SliceIndex d k') (ks ::. k) = k == k' && toPredicate d ks
 toTransform :: SliceDescriptor' key desc
             -> Exp key
             -> Exp (SliceResult key desc)
-toTransform SliceZ           _          = Z_
+toTransform SliceZ           k          = k
 toTransform (SliceKeep  d)   (ks ::. k) = toTransform d ks ::. k
 toTransform (SliceIndex d _) (ks ::. _) = toTransform d ks

@@ -13,7 +13,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE DataKinds #-}
+-- {-# LANGUAGE DataKinds #-}
 -- {-# LANGUAGE StandaloneKindSignatures #-}
 -- {-# LANGUAGE ConstraintKinds #-}
 -- {-# OPTIONS_GHC -Wno-redundant-constraints #-}
@@ -83,7 +83,7 @@ type Key = Z :. Int :. Int
 inf :: Exp Float
 inf = 1 / 0
 
-apsp :: forall rep. (Rep rep Key) => Acc (Table rep Key Float) -> Acc (Table rep Key Float)
+apsp :: forall rep. (Slice rep Key) => Acc (Table rep Key Float) -> Acc (Table rep Key Float)
 apsp ds = afor (A.unit n) update ds
   where
     Z_ ::. n' ::. n'' = A.the $ A.maximum $ keys ds
@@ -105,6 +105,12 @@ distances = createTable (use ds)
          , (Z :. 1 :. 3, 6)
          , (Z :. 2 :. 3, 8)
          ]
+
+
+test :: Acc (Table (SugarR G (Z :. Dense)) Int Float) -> Acc (Table (SugarR G (Z :. Dense)) Int Float)
+test d = let r = slice Z_ d
+         in r
+
 
 --  0
 -- / \

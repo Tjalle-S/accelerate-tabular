@@ -17,7 +17,7 @@ module Data.Array.Accelerate.Tabular.Rep.Compressed (
 , NonUniqueCompressed
 ) where
 
-import Data.Array.Accelerate
+import Data.Array.Accelerate hiding (Slice)
 import Data.Array.Accelerate.Data.Sort.Merge
 
 import Data.Array.Accelerate.Tabular.Classes.Rep
@@ -35,6 +35,7 @@ import Prelude (id)
 import Lens.Micro
 import Lens.Micro.Extras
 import Data.Array.Accelerate.Data.Lens ()
+import Data.Array.Accelerate.Tabular.Classes.Slice
 
 -- | Stores only keys present in the table, in a segmented vector.
 --
@@ -107,6 +108,7 @@ instance (Fold rep keys, Ord key) =>
 
   foldMeta = foldCompressed
 
+instance (Slice rep keys, Ord key) => Slice (rep :. OrdCompressed) (keys :. key)
 
 -- Non-unique compressed instances.
 -- --------------------------------
@@ -142,6 +144,8 @@ instance (Fold rep keys, Ord key) =>
   Fold (rep :. NonUniqueCompressed) (keys :. key) where
 
   foldMeta = foldCompressed
+
+instance (Slice rep keys, Ord key) => Slice (rep :. NonUniqueCompressed) (keys :. key)
 
 -- Local utilities for compressed representations.
 -- -----------------------------------------------

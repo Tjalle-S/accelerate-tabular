@@ -13,6 +13,9 @@
 {-# LANGUAGE StandaloneDeriving    #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE StandaloneKindSignatures #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Data.Array.Accelerate.Tabular.Rep.Sugar (
   SugarR
@@ -20,11 +23,12 @@ module Data.Array.Accelerate.Tabular.Rep.Sugar (
 , toSurfaceMeta
 ) where
 
-import Data.Array.Accelerate
+import Data.Array.Accelerate hiding (Slice)
 
 import Data.Data
 
 import Data.Array.Accelerate.Tabular.Classes.Rep
+import Data.Array.Accelerate.Tabular.Classes.Slice
 import Data.Array.Accelerate.Tabular.Classes.Sugar
 
 import Data.Coerce
@@ -38,7 +42,7 @@ import Data.Array.Accelerate.Data.Lens ()
 -- (@'Rep' rep ('Underlying' c key)@), @'Conv' c rep@ is the same as @rep@,
 -- but supporting the chosen @key@.
 --
--- There is no performance penalty for using 'Conv', if the specified
+-- There is no performance penalty for using 'SugarR', if the specified
 -- conversion functions perform no work aside from potentially reordering.
 --
 data SugarR c rep
@@ -65,7 +69,8 @@ instance (Sugar c key, Rep rep (Underlying c key), Eq key)
   enumKeys = map (toSurface $ Proxy @c) . enumKeys @rep . toUnderlyingMeta
   
 
-instance (Sugar c key, Index rep (Underlying c key), Eq key) => Index (SugarR c rep) key where
+instance (Sugar c key, Index rep (Underlying c key), Eq key)
+  => Index (SugarR c rep) key where
 
   toLinearIndex   met = toLinearIndex (toUnderlyingMeta met)
                       . toUnderlying (Proxy @c)
@@ -76,6 +81,9 @@ instance (Sugar c key, Index rep (Underlying c key), Eq key) => Index (SugarR c 
                             . toUnderlying (Proxy @c)
   unsafeToLinearIndices met = unsafeToLinearIndices (toUnderlyingMeta met)
                             . map (toUnderlying $ Proxy @c)
+
+instance (Sugar c key, Rep rep (Underlying c key), Eq key)
+  => Slice (SugarR c rep) key
 
 -- | Safely coerce table metadata for a surface key type to the one
 -- underlying it.

@@ -20,7 +20,8 @@
 
 
 module Data.Array.Accelerate.Tabular.Classes.Slice (
-  SliceFix (..), pattern Slice_
+  Slice
+, SliceFix (..), pattern Slice_
 , SliceDescriptor (..)
 , SliceDescriptor' (..)
 , SliceResult
@@ -55,6 +56,9 @@ mkPattern ''SliceFix
 -- However, it may be necessary to keep them apart, for syntactic sugar
 -- involving keys not defined using '(:.)'.
 --
+class (Rep rep key) => Slice rep key where
+
+instance Slice Z Z
 
 class (Elt key, Elt (SliceResult key desc), Elt desc)
   => SliceDescriptor key desc where
@@ -63,7 +67,7 @@ class (Elt key, Elt (SliceResult key desc), Elt desc)
   --
   getSliceDescriptor :: Exp desc -> SliceDescriptor' key desc
 
-instance SliceDescriptor Z Z where
+instance (Eq key) => SliceDescriptor key Z where
 
   getSliceDescriptor _ = SliceZ
 
@@ -87,7 +91,7 @@ instance (SliceDescriptor keys desc, Eq key)
 -- to allow pattern matching.
 --
 data SliceDescriptor' key desc where
-  SliceZ    :: SliceDescriptor' Z Z
+  SliceZ    :: SliceDescriptor' key Z
   SliceKeep :: (Elt keys, Elt (SliceResult keys desc), Elt key)
             => SliceDescriptor' keys desc
             -> SliceDescriptor' (keys :. key) (desc :. Keep)

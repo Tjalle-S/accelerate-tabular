@@ -16,10 +16,11 @@ module Data.Array.Accelerate.Tabular.Rep.Dense (
   Dense
 ) where
 
-import Data.Array.Accelerate
+import Data.Array.Accelerate hiding (Slice)
 import Data.Array.Accelerate.Data.Functor
 
 import Data.Array.Accelerate.Tabular.Classes.Rep
+import Data.Array.Accelerate.Tabular.Classes.Slice
 
 import Data.Array.Accelerate.Tabular.Classes.IndexKey
 import Data.Array.Accelerate.Tabular.Util
@@ -115,6 +116,8 @@ instance (Fold rep keys, IndexKey key) =>
           let T2 met' seg = withDict' prf res
               seg'        = map (* the n) seg
           in  (T2 met' seg', Dict')
+
+instance (Slice rep keys, IndexKey key) => Slice (rep :. Dense) (keys :. key)
 
 
 -- Local utilities.

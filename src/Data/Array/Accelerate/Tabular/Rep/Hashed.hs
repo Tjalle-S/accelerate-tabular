@@ -26,9 +26,10 @@ module Data.Array.Accelerate.Tabular.Rep.Hashed (
 , emptyHashSet, insert, HashSet (..)
 ) where
 
-import Data.Array.Accelerate
+import Data.Array.Accelerate hiding (Slice)
 
 import Data.Array.Accelerate.Tabular.Classes.Rep
+import Data.Array.Accelerate.Tabular.Classes.Slice
 
 import Data.Array.Accelerate.Tabular.Util hiding (lookup)
 import Data.Array.Accelerate.Data.Hashable (Hashable(hash))
@@ -140,6 +141,9 @@ instance (Fold rep keys, Eq key, Hashable key) =>
                   seg'        = map (* n) seg
               in  (T2 met' seg', Dict')
   
+
+instance (Slice rep keys, Eq key, Hashable key)
+  => Slice (rep :. Hashed) (keys :. key)
 
 -- Local utilities.
 -- ----------------

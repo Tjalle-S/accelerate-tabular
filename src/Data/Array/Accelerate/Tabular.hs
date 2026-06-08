@@ -59,6 +59,7 @@ module Data.Array.Accelerate.Tabular (
 , inner, inner1, inner2, inner3
 
 -- ** Slicing tables
+, Slice
 , slice
 , SliceFix (..), pattern Slice_
 , SliceDescriptor
@@ -211,6 +212,7 @@ import Data.Array.Accelerate hiding (
   , slice
   , (!)
   , Scalar, unit, the
+  , Slice
   )
 import qualified Data.Array.Accelerate as A
 

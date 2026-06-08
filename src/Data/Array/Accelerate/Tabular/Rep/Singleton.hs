@@ -18,9 +18,10 @@ module Data.Array.Accelerate.Tabular.Rep.Singleton (
   UnsafeCompleteSingleton
 ) where
 
-import Data.Array.Accelerate
+import Data.Array.Accelerate hiding (Slice)
 
 import Data.Array.Accelerate.Tabular.Classes.Rep
+import Data.Array.Accelerate.Tabular.Classes.Slice
 
 import Data.Array.Accelerate.Tabular.Util
 import Data.Array.Accelerate.Unsafe (undef)
@@ -97,31 +98,6 @@ instance (Fold rep keys, Eq key) => Fold (rep :. UnsafeCompleteSingleton) (keys 
       FKeep -> let (res, _) = foldMeta FKeep met
                in  (T2 dmet (asnd res), Dict')
       FGroup rest -> foldMeta rest met
-      
-      --foldMeta rest met
-      -- FGroup rest -> foldMeta rest met
-
-    -- case d of
-    --   FKeep -> let (res, prf) = foldMeta FKeep met 
-    --            in  undefined
-              --  in  case prf of
-              --        Dict' -> let seg = asnd res
-              --                 in  (T2 dmet seg, Dict')
-
--- instance (Fold rep keys, Eq key) =>
---   Fold (rep :. UnsafeCompleteSingleton) (keys :. key) where
-
---   foldMeta d dmet@SingletonMeta { met } =
---     case d of
---       FKeep       -> let (res, prf) = foldMeta FKeep met
---                      in  case prf of
---                            Dict' -> let seg = asnd res
---                                     in  (T2 dmet seg, Dict')
---         -- (T2 dmet (asnd $ P.fst $ foldMeta FKeep met), Dict')
---       FGroup rest -> let (res, prf) = foldMeta rest met
---                      in  case prf of
---                            Dict' -> (res, Dict')
-        -- foldMeta rest met
   
 
 instance (Index rep keys, Eq key) =>
@@ -154,6 +130,8 @@ instance (Index rep keys, Eq key) =>
     in  unsafeToLinearIndices met ks
 
 
+instance (Slice rep keys, Eq key)
+  => Slice (rep :. UnsafeCompleteSingleton) (keys :. key)
 
 
 -- Local utilities.
