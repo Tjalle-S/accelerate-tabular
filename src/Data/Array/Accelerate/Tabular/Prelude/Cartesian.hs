@@ -5,6 +5,11 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ExplicitForAll #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Data.Array.Accelerate.Tabular.Prelude.Cartesian (
   type (++)
@@ -14,18 +19,21 @@ module Data.Array.Accelerate.Tabular.Prelude.Cartesian (
 import Data.Array.Accelerate
 import Data.Array.Accelerate.Data.Monoid
 
+import Data.Array.Accelerate.Tabular.Classes.Fold
 import Data.Array.Accelerate.Tabular.Classes.Rep
 import Data.Array.Accelerate.Tabular.Prelude.Assocs
 import Data.Array.Accelerate.Tabular.Prelude.Table
 
 import Data.Type.Equality
+import Data.Data
+import Data.Array.Accelerate.Tabular.Classes.Sugar
 
 type family xs ++ ys where
   xs ++ Z         = xs
   xs ++ (ys :. y) = (xs ++ ys) :. y
 
 cartesianWith :: forall rep'' rep' rep key'' key' key c b a
-              . ( Key key, Key key', Key key''
+              . ( Key key'
                 , Rep rep key, Rep rep' key', Rep rep'' key''
                 , Elt a, Elt b, Elt c
                 , key'' ~ (key ++ key')
@@ -44,25 +52,32 @@ cartesianWith f xs ys =
         $ zipWith combine xs'' ys''
   where
     combine (T2 xk xv) (T2 yk yv) =
-      let k' = concatKey xk yk
+      let k' = concatKey xk (getKeyR yk)
       in  T2 k' (f xv yv)
 
-concatKey :: (Key key, Key key', Key key'', key'' ~ key ++ key')
+concatKey :: (Elt key, key'' ~ key ++ key')
           => Exp key
-          -> Exp key'
+          -> KeyR key'
           -> Exp key''
-concatKey k k' = toKey $ concatKey' (getKeyR k) (getKeyR k')
+concatKey k k' =
+  case k' of
+    KeyRZ -> k
+    KeyRSnoc kr k'' -> case proveKey k kr of
+      Dict' -> concatKey k kr ::. k''
+
+  --toKey $ concatKey' (getKeyR k) (getKeyR k')
 
 data KeyR key where
-  KeyRZ :: KeyR Z
-  KeyRSnoc :: KeyR keys
+  KeyRZ    :: KeyR Z
+  KeyRSnoc :: (Key keys, Elt key)
+           => KeyR keys
            -> Exp key
            -> KeyR (keys :. key)
 
 
-concatKey' :: KeyR key -> KeyR key' -> KeyR (key ++ key')
-concatKey' key KeyRZ           = key
-concatKey' key (KeyRSnoc ks k) = KeyRSnoc (concatKey' key ks) k
+-- concatKey' :: KeyR key -> KeyR key' -> KeyR (key ++ key')
+-- concatKey' key KeyRZ           = key
+-- concatKey' key (KeyRSnoc ks k) = KeyRSnoc (concatKey' key ks) k
 
 -- Only require this for right key (can append to anything).
 
@@ -71,13 +86,24 @@ class (Elt key) => Key key where
   getKeyR :: Exp key -> KeyR key
   toKey :: KeyR key -> Exp key
 
+  proveKey :: (Elt k) => Exp k -> KeyR key -> Dict' Elt (k ++ key)
+
 instance Key Z where
 
   getKeyR _ = KeyRZ
   toKey   _ = Z_
+
+  proveKey _ _ = Dict'
+
+-- instance (Sugar G a, Elt a) => Key a where
+
+--   getKeyR = getKeyR . toUnderlying (Proxy @G)
+
 
 instance (Key key, Elt k) => Key (key :. k) where
 
   getKeyR (ks ::. k) = KeyRSnoc (getKeyR ks) k
   toKey (KeyRSnoc ks k) = toKey ks ::. k
   
+  proveKey p (KeyRSnoc ks _) = case proveKey p ks of
+    Dict' -> Dict'
