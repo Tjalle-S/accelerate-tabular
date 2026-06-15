@@ -74,7 +74,7 @@ type D2 = Z :. Dense :. Dense
 
 
 main :: Prelude.IO ()
-main = Prelude.print $ run $ apsp @(Z :. Dense :. OrdCompressed) distances
+main = Prelude.print $ run $ apsp @(Z :. Dense :. Dense) distances
   -- let kvs = use [(Z :. 0 :. 0, 0.0), (Z :. 0 :. 1, 0.1), (Z :. 1 :. 0, 1.0), (Z :. 1 :. 1, 1.1)]
   -- in  Prelude.print $ run $ slice (Z_ ::. Keep_ ::. Slice_ 1) $ createTable @(Z :. Dense :. Dense) @(Z :. Int :. Int) @Float kvs
 
@@ -107,6 +107,9 @@ distances = createTable (use ds)
          , (Z :. 2 :. 3, 8)
          ]
 
+
+tab :: Acc (Table (SugarR G (Z :. Dense)) Int Float)
+tab = createTable (use [(4, 2)])
 
 --  0
 -- / \

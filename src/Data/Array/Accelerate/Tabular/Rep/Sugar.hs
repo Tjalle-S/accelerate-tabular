@@ -16,11 +16,18 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE ConstraintKinds #-}
+
+{-# OPTIONS_GHC -ddump-splices #-}
+{-# OPTIONS_GHC -ddump-to-file #-}
 
 module Data.Array.Accelerate.Tabular.Rep.Sugar (
   SugarR
 , toUnderlyingMeta
 , toSurfaceMeta
+, Test
 ) where
 
 import Data.Array.Accelerate hiding (Slice)
@@ -99,3 +106,15 @@ toSurfaceMeta :: (Rep (SugarR c rep) key)
               => Acc (Meta rep (Underlying c key))
               -> Acc (Meta (SugarR c rep) key)
 toSurfaceMeta (Meta_ met) = Meta_ (coerce met)
+
+
+data Test a b = Test (Maybe a) b Bool
+  deriving (Generic, Elt)
+
+genSugar ''Test
+
+
+-- data Test2 = Test2 (Maybe Int) Bool
+--   deriving (Generic, Elt)
+
+-- mkPattern ''Test2

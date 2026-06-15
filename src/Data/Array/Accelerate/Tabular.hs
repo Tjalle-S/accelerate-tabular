@@ -19,7 +19,7 @@ module Data.Array.Accelerate.Tabular (
 -- ** Using custom key types.
 , SugarR
 , Sugar
-, Id, G
+, G
 , tableDesugar, unsafeTableSugar
 
 -- ** 0-dimensional (scalar) tables.
