@@ -30,8 +30,8 @@ testsCreatePreservesAssocs :: [TestTree]
 testsCreatePreservesAssocs =
   [ makeTest "Dense / Int"          dense      dim1  int
   , makeTest "Dense / Char"         dense      char1 int
-  , makeTest "OrdCompressed / Int"  compressed dim1  int
-  , makeTest "OrdCompressed / Char" compressed char1 int
+  , makeTest "Compressed / Int"  compressed dim1  int
+  , makeTest "Compressed / Char" compressed char1 int
   , makeTest "Hashed / Int"         hashed     dim1  int
   , makeTest "Hashed / Char"        hashed     char1 int
   , makeTest "Dense2 / Int:.Int"    dense2     dim2  int
@@ -48,7 +48,7 @@ testsCreatePreservesAssocs =
 testsFoldAll :: [TestTree]
 testsFoldAll =
   [ makeTest "Dense / Int"          dense      dim1  int
-  , makeTest "OrdCompressed / Int"  compressed dim1  int
+  , makeTest "Compressed / Int"  compressed dim1  int
   , makeTest "Hashed / Int"         hashed     dim1  int
   , makeTest "Dense2 / Int:.Int"    dense2     dim2  int
   , makeTest "Hashed2 / Int:.Int"   hashed2    dim2  int
@@ -64,8 +64,8 @@ testsFilter :: [TestTree]
 testsFilter =
   [ makeTest "Dense / Int"          dense      dim1  int
   , makeTest "Dense / Char"         dense      char1 int
-  , makeTest "OrdCompressed / Int"  compressed dim1  int
-  , makeTest "OrdCompressed / Char" compressed char1 int
+  , makeTest "Compressed / Int"  compressed dim1  int
+  , makeTest "Compressed / Char" compressed char1 int
   , makeTest "Hashed / Int"         hashed     dim1  int
   , makeTest "Hashed / Char"        hashed     char1 int
   , makeTest "Dense2 / Int:.Int"    dense2     dim2  int
@@ -83,8 +83,8 @@ testsIndexing :: [TestTree]
 testsIndexing =
   [ makeTest "Dense / Int"          dense      dim1  int
   , makeTest "Dense / Char"         dense      char1 int
-  , makeTest "OrdCompressed / Int"  compressed dim1  int
-  , makeTest "OrdCompressed / Char" compressed char1 int
+  , makeTest "Compressed / Int"  compressed dim1  int
+  , makeTest "Compressed / Char" compressed char1 int
   , makeTest "Hashed / Int"         hashed     dim1  int
   , makeTest "Hashed / Char"        hashed     char1 int
   , makeTest "Dense2 / Int:.Int"    dense2     dim2  int
@@ -101,7 +101,7 @@ testsIndexing =
 testsInnerJoin :: [TestTree]
 testsInnerJoin =
   [ makeTest "Dense / Int"          dense dense dense      dim1  int
-  , makeTest "OrdCompressed / Int"  compressed compressed compressed dim1  int
+  , makeTest "Compressed / Int"  compressed compressed compressed dim1  int
   , makeTest "Hashed / Int"         hashed hashed hashed    dim1  int
   , makeTest "Dense2/CSR/Dense2"    dense2 csr dense2     dim2  int
   , makeTest "CSR/Dense2/Hashed2"    csr dense2 hashed2     dim2  int
@@ -113,7 +113,7 @@ testsInnerJoin =
 dense :: Proxy (Z :. Dense)
 dense = Proxy
 
-compressed :: Proxy (Z :. OrdCompressed)
+compressed :: Proxy (Z :. Compressed)
 compressed = Proxy
 
 hashed :: Proxy (Z :. Hashed)
@@ -122,14 +122,14 @@ hashed = Proxy
 dense2 :: Proxy (Z :. Dense :. Dense)
 dense2 = Proxy
 
-csr :: Proxy (Z :. Dense :. OrdCompressed)
+csr :: Proxy (Z :. Dense :. Compressed)
 csr = Proxy
 
-coo :: Proxy (Z :. NonUniqueCompressed :. UnsafeCompleteSingleton)
+coo :: Proxy Coo
 coo = Proxy
 
-csf :: Proxy (Z :. OrdCompressed :. OrdCompressed :. OrdCompressed)
+csf :: Proxy (Z :. Compressed :. Compressed :. Compressed)
 csf = Proxy
 
-hashed2 :: Proxy (Z :. Hashed :. OrdCompressed)
+hashed2 :: Proxy (Z :. Hashed :. Compressed)
 hashed2 = Proxy

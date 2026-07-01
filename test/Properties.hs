@@ -160,6 +160,6 @@ innerJoinReference runN _ _ _ gen = property $ do
         -> Acc (Vector (key, val))
         -> Acc (Vector (key, val))
     go' kvs1 kvs2 = assocs
-                  $ innerjoin @rep'' (+)
+                  $ innerJoin @rep'' (+)
                     (createTable @rep  kvs1)
                     (createTable @rep' kvs2)

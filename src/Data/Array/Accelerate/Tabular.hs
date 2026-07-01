@@ -10,10 +10,11 @@ module Data.Array.Accelerate.Tabular (
 
 , Z (..), (:.) (..)
 
+, Coo
+
 -- ** Available level formats
 , Dense
-, OrdCompressed, NonUniqueCompressed
-, UnsafeCompleteSingleton
+, Compressed
 , Hashed
 
 -- ** Using custom key types.

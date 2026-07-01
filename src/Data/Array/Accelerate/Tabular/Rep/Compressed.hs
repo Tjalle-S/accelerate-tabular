@@ -11,11 +11,7 @@
 {-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 
-module Data.Array.Accelerate.Tabular.Rep.Compressed (
-  Compressed
-, OrdCompressed
-, NonUniqueCompressed
-) where
+module Data.Array.Accelerate.Tabular.Rep.Compressed (Compressed) where
 
 import Data.Array.Accelerate hiding (Slice)
 import Data.Array.Accelerate.Data.Sort.Merge
@@ -30,23 +26,21 @@ import Data.Array.Accelerate.Unsafe (undef)
 
 import Data.Array.Accelerate.Tabular.Classes.Fold
 
-import Prelude (id)
-
 import Lens.Micro
 import Lens.Micro.Extras
 import Data.Array.Accelerate.Data.Lens ()
 import Data.Array.Accelerate.Tabular.Classes.Slice
 
+
+-- data Compressed
+
 -- | Stores only keys present in the table, in a segmented vector.
+-- Keys are maintained in sorted order.
 --
 data Compressed
 
--- | Like 'Compressed', but maintains keys in sorted order.
---
-data OrdCompressed
-
--- | Like 'Compressed', but may contain duplicate keys.
-data NonUniqueCompressed
+-- -- | Like 'Compressed', but may contain duplicate keys.
+-- data NonUniqueCompressed
 
 -- Compressed instances.
 -- ---------------------
@@ -63,11 +57,11 @@ data NonUniqueCompressed
 -- -----------------------------
 
 instance (Rep rep keys, Ord key) =>
-  Rep (rep :. OrdCompressed) (keys :. key) where
+  Rep (rep :. Compressed) (keys :. key) where
 
-  type MetaR (rep :. OrdCompressed) (keys :. key) = CompressedMetaR rep keys key
+  type MetaR (rep :. Compressed) (keys :. key) = CompressedMetaR rep keys key
 
-  type Ordered (rep :. OrdCompressed) = Ordered rep
+  type Ordered (rep :. Compressed) = Ordered rep
 
   emptyMeta = emptyCompressed
 
@@ -104,48 +98,48 @@ instance (Rep rep keys, Ord key) =>
 
 
 instance (Fold rep keys, Ord key) =>
-  Fold (rep :. OrdCompressed) (keys :. key) where
+  Fold (rep :. Compressed) (keys :. key) where
 
   foldMeta = foldCompressed
 
-instance (Slice rep keys, Ord key) => Slice (rep :. OrdCompressed) (keys :. key)
+instance (Slice rep keys, Ord key) => Slice (rep :. Compressed) (keys :. key)
 
 -- Non-unique compressed instances.
 -- --------------------------------
 
-instance (Rep rep keys, Ord key) =>
-  Rep (rep :. NonUniqueCompressed) (keys :. key) where
+-- instance (Rep rep keys, Ord key) =>
+--   Rep (rep :. NonUniqueCompressed) (keys :. key) where
 
-  type MetaR (rep :. NonUniqueCompressed) (keys :. key) =
-    CompressedMetaR rep keys key
+--   type MetaR (rep :. NonUniqueCompressed) (keys :. key) =
+--     CompressedMetaR rep keys key
 
-  emptyMeta = emptyCompressed
+--   emptyMeta = emptyCompressed
 
-  createMeta o ks = 
-    let (ks', is)     = splitKeys ks
-        T3 met perm n = createMeta o ks'
+--   createMeta o ks = 
+--     let (ks', is)     = splitKeys ks
+--         T3 met perm n = createMeta o ks'
 
-        (_, is', perm') = case (o, isOrderedMeta met) of
-          (AssumeOrdered, Just Refl) -> (undefined, is, generate (shape is) id)
-          _                          -> unzip3
-            $ sortBy (comparing $ view _1) 
-            $ zipChecked3 perm is (generate (shape is) id) 
-
-
-        histo = histogram (I1 $ the n) perm
-
-        met' = CompressedMeta met (scanl1 (+) histo) is'
-    in T3 met' perm' (unit $ length is)
-
-  enumKeys = enumKeysCompressed
+--         (_, is', perm') = case (o, isOrderedMeta met) of
+--           (AssumeOrdered, Just Refl) -> (undefined, is, generate (shape is) id)
+--           _                          -> unzip3
+--             $ sortBy (comparing $ view _1) 
+--             $ zipChecked3 perm is (generate (shape is) id) 
 
 
-instance (Fold rep keys, Ord key) =>
-  Fold (rep :. NonUniqueCompressed) (keys :. key) where
+--         histo = histogram (I1 $ the n) perm
 
-  foldMeta = foldCompressed
+--         met' = CompressedMeta met (scanl1 (+) histo) is'
+--     in T3 met' perm' (unit $ length is)
 
-instance (Slice rep keys, Ord key) => Slice (rep :. NonUniqueCompressed) (keys :. key)
+--   enumKeys = enumKeysCompressed
+
+
+-- instance (Fold rep keys, Ord key) =>
+--   Fold (rep :. NonUniqueCompressed) (keys :. key) where
+
+--   foldMeta = foldCompressed
+
+-- instance (Slice rep keys, Ord key) => Slice (rep :. NonUniqueCompressed) (keys :. key)
 
 -- Local utilities for compressed representations.
 -- -----------------------------------------------

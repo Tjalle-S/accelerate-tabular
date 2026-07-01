@@ -46,6 +46,7 @@ library
       Data.Array.Accelerate.Tabular.Prelude.Zip
       Data.Array.Accelerate.Tabular.Rep
       Data.Array.Accelerate.Tabular.Rep.Compressed
+      Data.Array.Accelerate.Tabular.Rep.Coo
       Data.Array.Accelerate.Tabular.Rep.Dense
       Data.Array.Accelerate.Tabular.Rep.GenProperties
       Data.Array.Accelerate.Tabular.Rep.Hashed

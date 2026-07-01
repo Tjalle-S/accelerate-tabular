@@ -56,22 +56,22 @@ import Data.Array.Accelerate.Tabular.Prelude
 -- type I2 = Z :. Int :. Int
 type D2 = Z :. Dense :. Dense
 
--- type CD = Z :. OrdCompressed :. Dense
+-- type CD = Z :. Compressed :. Dense
 
 -- type I1 = Z :. Int
--- type Sparse = Z :. OrdCompressed
+-- type Sparse = Z :. Compressed
 
 -- type H = Z :. Hashed
--- type HC = Z :. Hashed :. OrdCompressed
+-- type HC = Z :. Hashed :. Compressed
 
 -- type COO = Z :. NonUniqueCompressed :. UnsafeCompleteSingleton :. UnsafeCompleteSingleton
 
 -- type I3 = Z :. Int :. Int :. Int
--- type CSF3 = Z :. OrdCompressed :. OrdCompressed :. OrdCompressed
+-- type CSF3 = Z :. Compressed :. Compressed :. Compressed
 
 
 main :: Prelude.IO ()
-main = Prelude.print $ run $ apsp @(Z :. Dense :. OrdCompressed) distances
+main = Prelude.print $ run $ apsp @(Z :. Dense :. Compressed) distances
   -- let kvs = use [(Z :. 0 :. 0, 0.0), (Z :. 0 :. 1, 0.1), (Z :. 1 :. 0, 1.0), (Z :. 1 :. 1, 1.1)]
   -- in  Prelude.print $ run $ slice (Z_ ::. Keep_ ::. Slice_ 1) $ createTable @(Z :. Dense :. Dense) @(Z :. Int :. Int) @Float kvs
 
