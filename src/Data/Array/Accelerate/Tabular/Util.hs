@@ -17,7 +17,6 @@ module Data.Array.Accelerate.Tabular.Util (
 , histogram
 , combineMaybe
 , singleton
-, join
 , lookupMany, lookup
 ) where
 
@@ -102,21 +101,6 @@ combineMaybe f mx my = T2 mx my & match \case
 --
 unindex :: (Elt a, Elt b) => Exp (a :. b) -> Exp (a, b)
 unindex (x ::. y) = T2 x y
-
--- | The 'join' function is the conventional monad join operator. It
--- is used to remove one level of monadic structure, projecting its
--- bound argument into the outer level.
---
---
--- \'@'join' bss@\' can be understood as the @do@ expression
---
--- @
--- do bs <- bss
---    bs
--- @
---
-join :: (Monad m, Elt a, Elt (m a), Elt (m (m a))) => Exp (m (m a)) -> Exp (m a)
-join = (>>= P.id)
 
 -- | Create a single-element array of any dimensionality.
 --
