@@ -29,12 +29,9 @@ module Main (main) where
 
 import qualified Prelude
 
-import Data.Array.Accelerate (Arrays)
 import qualified Data.Array.Accelerate as A
-import Data.Array.Accelerate.LLVM.Native hiding (Arrays)
-import Data.Array.Accelerate.Tabular.Rep
-import Data.Array.Accelerate.Tabular.Classes.Rep
-import Data.Array.Accelerate.Tabular hiding (Assert)
+import Data.Array.Accelerate.LLVM.Native
+import Data.Array.Accelerate.Tabular
 
 -- import qualified Data.Array.Accelerate.Tabular.Prelude.Zip as Z
 -- import Data.Array.Accelerate.Tabular.Util (lookupMany)
@@ -42,8 +39,8 @@ import Data.Array.Accelerate.Tabular.Prelude
 -- import Data.Array.Accelerate.Tabular.Classes.Slice
 -- import Data.Array.Accelerate.Tabular.Prelude.Slice
 -- import Data.Array.Accelerate.Tabular.Classes.Fold
-import Data.Array.Accelerate (inspectCompiler)
-import Data.Array.Accelerate.Tabular.Prelude.Cartesian (cartesianWith)
+-- import Data.Array.Accelerate (inspectCompiler)
+-- import Data.Array.Accelerate.Tabular.Prelude.Cartesian (cartesianWith)
 -- import Data.Kind
 -- import GHC.TypeError
 -- import Data.Data
@@ -84,19 +81,19 @@ inf :: Exp Float
 inf = 1 / 0
 
 apsp :: forall rep. (Slice rep Key) => Acc (Table rep Key Float) -> Acc (Table rep Key Float)
-apsp ds = afor (A.unit n) update ds
+apsp ds = afor (unit n) update ds
   where
     Z_ ::. n' ::. n'' = A.the $ A.maximum $ keys ds
     n = max n' n''
 
-    update :: Acc (A.Scalar Int) -> Acc (Table rep Key Float) -> Acc (Table rep Key Float)
+    update :: Acc (Scalar Int) -> Acc (Table rep Key Float) -> Acc (Table rep Key Float)
     update ak d = 
-      let k = A.the ak
+      let k = the ak
           toK   = slice @(Z :. Dense) (Z_ ::. Keep_    ::. Slice_ k) d
           fromK = slice @(Z :. Dense) (Z_ ::. Slice_ k ::. Keep_)    d
 
           added = cartesianWith @rep (+) toK fromK
-      in  fullouterjoin @rep min inf inf d added
+      in  fullOuterJoin @rep min inf inf d added
 
 distances :: (Rep rep Key) => Acc (Table rep Key Float)
 distances = createTable (use ds)
@@ -115,11 +112,11 @@ distances = createTable (use ds)
 --  3
 
 
-afor :: (Arrays a) => Acc (A.Scalar Int)
-                   -> (Acc (A.Scalar Int) -> Acc a -> Acc a)
+afor :: (Arrays a) => Acc (Scalar Int)
+                   -> (Acc (Scalar Int) -> Acc a -> Acc a)
                    -> Acc a
                    -> Acc a
 afor n f x = asnd $ awhile
-  (\(T2 i _)  -> A.zipWith (<) i n)
-  (\(T2 i x') -> T2 (A.map (+ 1) i) (f i x'))
-  (T2 (A.unit 0) x)
+  (\(T2 i _)  -> unit (the i < the n))
+  (\(T2 i x') -> T2 (map (+ 1) i) (f i x'))
+  (T2 (unit 0) x)

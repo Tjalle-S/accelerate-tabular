@@ -41,7 +41,9 @@ module Data.Array.Accelerate.Tabular (
 , assocs, keys, values
 
 -- ** Zipping/joining tables
-, innerjoin, leftouterjoin, rightouterjoin, fullouterjoin
+, innerJoin, leftOuterJoin, rightOuterJoin, fullOuterJoin
+
+, cartesianWith
 
 -- ** Folding over tables
 , Fold
@@ -204,7 +206,6 @@ module Data.Array.Accelerate.Tabular (
 , Acc, Arrays, Elt
 ) where
 
-import Prelude (type (~))
 import qualified Prelude as P
 
 import Data.Array.Accelerate hiding (
@@ -214,13 +215,14 @@ import Data.Array.Accelerate hiding (
   , (!)
   , Scalar, unit, the
   , Slice
+  , awhile
   )
 import qualified Data.Array.Accelerate as A
 
+import Data.Array.Accelerate.Tabular.Prelude.Cartesian
 import Data.Array.Accelerate.Tabular.Prelude
 import Data.Array.Accelerate.Tabular.Rep
 
 import Data.Array.Accelerate.Tabular.Classes.IndexKey
 import Data.Array.Accelerate.Tabular.Classes.Slice
-import Data.Array.Accelerate.Tabular.Rep.Sugar
 import Data.Array.Accelerate.Tabular.Classes.Sugar

@@ -13,14 +13,22 @@ module Data.Array.Accelerate.Tabular.Prelude (
   the, unit
 , indexed
 
-, innerjoin, leftouterjoin, rightouterjoin, fullouterjoin
+, awhile
+
+, innerJoin, leftOuterJoin, rightOuterJoin, fullOuterJoin
 
 , tableDesugar, unsafeTableSugar
 
 , module Tabular.Prelude
 ) where
 
-import Data.Array.Accelerate hiding (Scalar, the, unit, indexed, (!), imap, filter)
+import Data.Array.Accelerate hiding (
+    Scalar, the, unit
+  , indexed, imap
+  , filter
+  , awhile
+  )
+import qualified Data.Array.Accelerate as A
 import Data.Array.Accelerate.Data.Functor
 import Data.Array.Accelerate.Data.Maybe
 
@@ -55,9 +63,20 @@ indexed :: (Rep rep key, Elt val)
         -> Acc (Table rep key (key, val))
 indexed = imap T2
 
+-- | An array-level 'while' construct. Continue to apply the given function,
+-- starting with the initial value, until the test function evaluates to
+-- 'False'.
+--
+awhile :: (Arrays a)
+       => (Acc a -> Acc (Scalar Bool)) -- ^ Keep evaluating while this returns 'True'.
+       -> (Acc a -> Acc a)             -- ^ Function to apply.
+       -> Acc a                        -- ^ Initial value.
+       -> Acc a
+awhile c = A.awhile (A.unit . the . c)
+
 -- Reference implementations for joins.
 
-innerjoin :: forall rep'' rep' rep key c b a
+innerJoin :: forall rep'' rep' rep key c b a
           . ( Rep rep key, Rep rep' key, Rep rep'' key
             , Elt a, Elt b, Elt c
             )
@@ -65,7 +84,7 @@ innerjoin :: forall rep'' rep' rep key c b a
           -> Acc (Table rep key a)
           -> Acc (Table rep' key b)
           -> Acc (Table rep'' key c)
-innerjoin f xs ys =
+innerJoin f xs ys =
   let (xks, xvs) = unzip (assocs xs)
       yvs  = indexMany ys xks
       kvs = afst
@@ -76,7 +95,7 @@ innerjoin f xs ys =
             yvs
   in  createTable' (assumeOrdered xs) kvs
 
-leftouterjoin :: forall rep'' rep' rep key c b a
+leftOuterJoin :: forall rep'' rep' rep key c b a
               . ( Rep rep key, Rep rep' key, Rep rep'' key
                 , Elt a, Elt b, Elt c
                 )
@@ -85,7 +104,7 @@ leftouterjoin :: forall rep'' rep' rep key c b a
               -> Acc (Table rep key a)
               -> Acc (Table rep' key b)
               -> Acc (Table rep'' key c)
-leftouterjoin f d xs ys =
+leftOuterJoin f d xs ys =
   let (xks, xvs) = unzip (assocs xs)
       yvs  = indexMany ys xks
       kvs = zipWith3 (\k a mb -> T2 k $ f a (fromMaybe d mb))
@@ -94,7 +113,7 @@ leftouterjoin f d xs ys =
             yvs
   in  createTable' (assumeOrdered xs) kvs
 
-rightouterjoin :: forall rep'' rep' rep key c b a
+rightOuterJoin :: forall rep'' rep' rep key c b a
                . ( Rep rep key, Rep rep' key, Rep rep'' key
                  , Elt a, Elt b, Elt c
                  )
@@ -103,9 +122,9 @@ rightouterjoin :: forall rep'' rep' rep key c b a
               -> Acc (Table rep key a)
               -> Acc (Table rep' key b) 
               -> Acc (Table rep'' key c)
-rightouterjoin f d = flip $ leftouterjoin (flip f) d
+rightOuterJoin f d = flip $ leftOuterJoin (flip f) d
 
-fullouterjoin :: forall rep'' rep' rep key c b a
+fullOuterJoin :: forall rep'' rep' rep key c b a
               . ( Rep rep key, Rep rep' key, Rep rep'' key
                 , Elt a, Elt b, Elt c
                 )
@@ -115,7 +134,7 @@ fullouterjoin :: forall rep'' rep' rep key c b a
               -> Acc (Table rep key a)
               -> Acc (Table rep' key b) 
               -> Acc (Table rep'' key c)
-fullouterjoin f dx dy xs ys =
+fullOuterJoin f dx dy xs ys =
   let (xks, xvs) = unzip (assocs xs)
       (yks, yvs) = unzip (assocs ys)
 
