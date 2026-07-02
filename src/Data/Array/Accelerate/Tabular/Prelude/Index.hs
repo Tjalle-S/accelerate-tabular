@@ -7,11 +7,13 @@
 {-# LANGUAGE MonoLocalBinds #-}
 
 module Data.Array.Accelerate.Tabular.Prelude.Index (
-  index, (!?), indexMany
+  index, (!?), indexMany, indexMany'
 , unsafeIndex, (!), unsafeIndexMany
 ) where
 
-import Data.Array.Accelerate hiding ((!), Scalar)
+import Data.Array.Accelerate hiding ((!), Scalar, Vector)
+import qualified Data.Array.Accelerate as A
+
 import Data.Array.Accelerate.Control.Monad
 import Data.Array.Accelerate.Data.Functor
 import Data.Array.Accelerate.Data.Maybe
@@ -51,7 +53,19 @@ indexMany :: (Rep rep key, Elt val)
           => Acc (Table rep key val)
           -> Acc (Vector key)
           -> Acc (Vector (Maybe val))
-indexMany Table_ { meta_, vals_ } keys =
+indexMany tab = fromArray . indexMany' tab . toArray
+  -- let keys' = toArray keys
+  -- in  case getIndexMeta meta_ of
+  --   NoDict -> fromArray $ map join $ lookupMany keys' $ zip (enumKeys meta_) vals_
+  --   Dict   -> let mis  = toLinearIndices meta_ keys'
+  --                 mmvs = map (fmap (vals_ !!)) mis
+  --             in  fromArray $ map join mmvs
+
+indexMany' :: (Rep rep key, Elt val)
+           => Acc (Table rep key val)
+           -> Acc (A.Vector key)
+           -> Acc (A.Vector (Maybe val))
+indexMany' Table_ { meta_, vals_ } keys =
   case getIndexMeta meta_ of
     NoDict -> map join $ lookupMany keys $ zip (enumKeys meta_) vals_
     Dict   -> let mis  = toLinearIndices meta_ keys
@@ -94,11 +108,14 @@ unsafeIndexMany :: (Rep rep key, Elt val)
                 -> Acc (Vector key)
                 -> Acc (Vector val)
 unsafeIndexMany Table_ { meta_, vals_ } keys =
-  case getIndexMeta meta_ of
-    NoDict -> map (fromJust . fromJust)
-            $ lookupMany keys
+  let keys' = toArray keys
+  in case getIndexMeta meta_ of
+    NoDict -> fromArray
+            $ map (fromJust . fromJust)
+            $ lookupMany keys'
             $ zip (enumKeys meta_) vals_
-    Dict   -> map (fromJust . (vals_ !!)) (unsafeToLinearIndices meta_ keys)
+    Dict   -> fromArray
+            $ map (fromJust . (vals_ !!)) (unsafeToLinearIndices meta_ keys')
 
 getIndexMeta :: forall rep key . (Rep rep key)
               => Acc (Meta rep key)

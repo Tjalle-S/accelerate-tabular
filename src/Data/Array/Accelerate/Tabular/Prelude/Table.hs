@@ -12,17 +12,25 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Data.Array.Accelerate.Tabular.Prelude.Table (
   Table (..)
-, Scalar
-
 , pattern Table_, meta_, vals_
+, Scalar
+, Vector
+, fromArray, toArray
+
 , emptyTable, createTable', createTable, orderedCreateTable
 , assumeOrdered
 ) where
 
-import Data.Array.Accelerate hiding (Scalar, unit, the)
+import qualified Prelude as P
+import Data.Maybe (catMaybes)
+import GHC.IsList
+
+import Data.Array.Accelerate hiding (Scalar, Vector, unit, the, fromList, toList)
 import qualified Data.Array.Accelerate as A
 
 import Data.Array.Accelerate.Tabular.Classes.Rep
@@ -31,6 +39,8 @@ import Control.DeepSeq (NFData)
 import Data.Array.Accelerate.Tabular.Util (emptyVector)
 import Data.Type.Equality
 import Data.Proxy
+import Data.Array.Accelerate.Tabular.Rep
+import Data.Array.Accelerate.Data.Maybe
 
 -- | A table, consisting of metadata and values.
 --
@@ -40,7 +50,7 @@ data Table rep key val = Table {
   meta :: Meta rep key
   -- | The array of values.
   --
-, vals :: Vector (Maybe val)
+, vals :: A.Vector (Maybe val)
 } deriving (Generic)
 
 deriving instance (Show (Meta rep key), Elt val, Show val) =>
@@ -48,16 +58,41 @@ deriving instance (Show (Meta rep key), Elt val, Show val) =>
 instance (Arrays (Meta rep key), Elt val) => Arrays (Table rep key val)
 instance (NFData (Meta rep key), Elt val) => NFData (Table rep key val)
 
--- | Scalar tables hold a single value.
-type Scalar = Table Z Z
-
-
 pattern Table_ :: (Arrays (Meta rep key), Elt val)
                => Acc (Meta rep key)
-               -> Acc (Vector (Maybe val))
+               -> Acc (A.Vector (Maybe val))
                -> Acc (Table rep key val)
 pattern Table_ { meta_, vals_ } = Pattern (meta_, vals_)
 {-# COMPLETE Table_ #-}
+
+-- | Scalar tables hold a single value.
+--
+type Scalar = Table Z Z
+
+type Vector = Table (Z :. Dense) (Z :. Int)
+
+instance (Elt a) => IsList (Vector a) where
+
+  type Item (Vector a) = a
+
+  fromList xs = fromListN (P.length xs) xs
+  toList = catMaybes . A.toList . vals
+
+  fromListN n xs = Table {
+    meta = Meta (Meta (), A.fromList Z [n])
+  , vals = fromList (P.map Just xs)
+  }
+
+-- | Convert an Accelerate array to a 'Vector'.
+fromArray :: (Elt a) => Acc (A.Vector a) -> Acc (Vector a)
+fromArray xs = Table_
+  (Meta_ $ T2 emptyMeta (A.unit $ length xs))
+  (A.map Just_ xs)
+
+-- | Convert a 'Vector' to an Accelerate array.
+--
+toArray :: (Elt a) => Acc (Vector a) -> Acc (A.Vector a)
+toArray = afst . justs . vals_
 
 -- | Create an empty table.
 -- 
@@ -70,7 +105,7 @@ emptyTable = Table_ {
 
 createTable' :: (Rep rep key, Elt val)
              => AssumeOrd
-             -> Acc (Vector (key, val))
+             -> Acc (A.Vector (key, val))
              -> Acc (Table rep key val)
 createTable' o kvs = 
   let (ks, vs)      = unzip kvs
@@ -94,7 +129,7 @@ assumeOrdered _ = case isOrderedProxy @rep Proxy of
 createTable :: (Rep rep key, Elt val)
             => Acc (Vector (key, val))
             -> Acc (Table rep key val)
-createTable = createTable' NoAssumeOrdered
+createTable = createTable' NoAssumeOrdered . toArray
 
 -- | Variant of 'createTable' that assumes the input is already ordered by key.
 -- 
@@ -104,4 +139,4 @@ createTable = createTable' NoAssumeOrdered
 orderedCreateTable :: (Rep rep key, Elt val)
                    => Acc (Vector (key, val))
                    -> Acc (Table rep key val)
-orderedCreateTable = createTable' AssumeOrdered
+orderedCreateTable = createTable' AssumeOrdered . toArray

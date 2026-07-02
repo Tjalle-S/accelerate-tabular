@@ -24,10 +24,6 @@ import Data.Array.Accelerate.Tabular.Classes.Rep
 import Data.Array.Accelerate.Tabular.Prelude.Assocs
 import Data.Array.Accelerate.Tabular.Prelude.Table
 
-import Data.Type.Equality
-import Data.Data
-import Data.Array.Accelerate.Tabular.Classes.Sugar
-
 type family xs ++ ys where
   xs ++ Z         = xs
   xs ++ (ys :. y) = (xs ++ ys) :. y
@@ -43,8 +39,9 @@ cartesianWith :: forall rep'' rep' rep key'' key' key c b a
               -> Acc (Table rep' key' b)
               -> Acc (Table rep'' key'' c)
 cartesianWith f xs ys =
-  let xs' = assocs xs
-      ys' = assocs ys
+  let 
+      xs' = assocs' xs
+      ys' = assocs' ys
       xs'' = replicate (Z_ ::. All_       ::. length ys') xs'
       ys'' = replicate (Z_ ::. length xs' ::. All_)       ys'
   in  createTable' (assumeOrdered xs <> assumeOrdered ys)

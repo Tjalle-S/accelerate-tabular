@@ -30,7 +30,7 @@ module Data.Array.Accelerate.Tabular (
 -- ** Introducing tables
 , emptyTable
 , createTable, orderedCreateTable
-, A.use
+, use
 
 -- ** Indexing into tables
 , IndexKey
@@ -65,7 +65,8 @@ module Data.Array.Accelerate.Tabular (
 -- ** Slicing tables
 , Slice
 , slice
-, SliceFix (..), pattern Slice_
+-- *** Describing slices
+, SliceFix (..), pattern Keep_, pattern Slice_
 , SliceDescriptor
 , SliceResult
 
@@ -74,8 +75,8 @@ module Data.Array.Accelerate.Tabular (
 
 -- ** Flow control
 , (?|), acond
-, awhile, awhileSpeculative, awhileAndOne,
-  IfThenElse(..)
+, awhile--, awhileSpeculative, awhileAndOne,
+, IfThenElse(..)
 -- ---------------------------------------------------------------------------
   -- * The /Accelerate/ Expression Language
   -- ** Scalar data types
@@ -218,12 +219,11 @@ import Data.Array.Accelerate hiding (
   , Slice
   , awhile
   )
-import qualified Data.Array.Accelerate as A
-
-import Data.Array.Accelerate.Tabular.Prelude.Cartesian
-import Data.Array.Accelerate.Tabular.Prelude
-import Data.Array.Accelerate.Tabular.Rep
 
 import Data.Array.Accelerate.Tabular.Classes.IndexKey
 import Data.Array.Accelerate.Tabular.Classes.Slice
 import Data.Array.Accelerate.Tabular.Classes.Sugar
+
+import Data.Array.Accelerate.Tabular.Prelude.Cartesian
+import Data.Array.Accelerate.Tabular.Prelude
+import Data.Array.Accelerate.Tabular.Rep

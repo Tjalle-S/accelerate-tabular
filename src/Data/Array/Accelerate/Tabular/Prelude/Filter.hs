@@ -26,7 +26,7 @@ filter p tab = createTable' (assumeOrdered tab) (filter' p tab)
 filter' :: (Rep rep key, Elt val)
         => (Exp key -> Exp val -> Exp Bool)
         -> Acc (Table rep key val)
-        -> Acc (Vector (key, val))
+        -> Acc (A.Vector (key, val))
 filter' p tab = 
   let kvs   = massocs tab
   in  afst $ compact

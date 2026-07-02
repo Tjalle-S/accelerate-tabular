@@ -23,7 +23,7 @@ module Data.Array.Accelerate.Tabular.Prelude (
 ) where
 
 import Data.Array.Accelerate hiding (
-    Scalar, the, unit
+    Scalar, Vector, the, unit
   , indexed, imap
   , filter
   , awhile
@@ -85,8 +85,8 @@ innerJoin :: forall rep'' rep' rep key c b a
           -> Acc (Table rep' key b)
           -> Acc (Table rep'' key c)
 innerJoin f xs ys =
-  let (xks, xvs) = unzip (assocs xs)
-      yvs  = indexMany ys xks
+  let (xks, xvs) = unzip (assocs' xs)
+      yvs  = indexMany' ys xks
       kvs = afst
           $ justs
           $ zipWith3 (\k a mb -> T2 k <$> maybe Nothing_ (Just_ . f a) mb)
@@ -105,8 +105,8 @@ leftOuterJoin :: forall rep'' rep' rep key c b a
               -> Acc (Table rep' key b)
               -> Acc (Table rep'' key c)
 leftOuterJoin f d xs ys =
-  let (xks, xvs) = unzip (assocs xs)
-      yvs  = indexMany ys xks
+  let (xks, xvs) = unzip (assocs' xs)
+      yvs  = indexMany' ys xks
       kvs = zipWith3 (\k a mb -> T2 k $ f a (fromMaybe d mb))
             xks
             xvs
@@ -135,18 +135,18 @@ fullOuterJoin :: forall rep'' rep' rep key c b a
               -> Acc (Table rep' key b) 
               -> Acc (Table rep'' key c)
 fullOuterJoin f dx dy xs ys =
-  let (xks, xvs) = unzip (assocs xs)
-      (yks, yvs) = unzip (assocs ys)
+  let (xks, xvs) = unzip (assocs' xs)
+      (yks, yvs) = unzip (assocs' ys)
 
       kvs1 = zipWith3 (\k a mb -> T2 k $ f a (fromMaybe dy mb))
             xks
             xvs
-            (indexMany ys xks)
+            (indexMany' ys xks)
       kvs2 = zipWith3 (\k b ma -> T2 k $ f (fromMaybe dx ma) b)
             yks
             yvs
-            (indexMany xs yks)
-  in  createTable (kvs1 ++ kvs2)
+            (indexMany' xs yks)
+  in  createTable' NoAssumeOrdered (kvs1 ++ kvs2)
 
 -- | Convert a table using syntactic sugar for its keys to the underlying table.
 -- 

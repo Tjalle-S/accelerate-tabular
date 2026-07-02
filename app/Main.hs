@@ -3,90 +3,45 @@
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE BlockArguments #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE PatternSynonyms #-}
--- {-# LANGUAGE NoMonomorphismRestriction #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GADTs #-}
--- {-# LANGUAGE DataKinds #-}
--- {-# LANGUAGE StandaloneKindSignatures #-}
--- {-# LANGUAGE ConstraintKinds #-}
--- {-# OPTIONS_GHC -Wno-redundant-constraints #-}
--- {-# LANGUAGE UndecidableSuperClasses #-}
-{-# LANGUAGE UndecidableInstances #-}
--- {-# LANGUAGE StandaloneDeriving #-}
--- {-# LANGUAGE DeriveGeneric #-}
--- {-# LANGUAGE RankNTypes #-}
--- {-# LANGUAGE UndecidableSuperClasses #-}
--- {-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE BangPatterns #-}
 
 module Main (main) where
 
 import qualified Prelude
 
-import qualified Data.Array.Accelerate as A
 import Data.Array.Accelerate.LLVM.Native
 import Data.Array.Accelerate.Tabular
+import Data.Array.Accelerate.Tabular.Prelude.Table (toArray)
+import Data.Array.Accelerate (inspectCompiler)
+import Data.Array.Accelerate.Tabular.Prelude.Assocs (assocs')
 
--- import qualified Data.Array.Accelerate.Tabular.Prelude.Zip as Z
--- import Data.Array.Accelerate.Tabular.Util (lookupMany)
-import Data.Array.Accelerate.Tabular.Prelude
--- import Data.Array.Accelerate.Tabular.Classes.Slice
--- import Data.Array.Accelerate.Tabular.Prelude.Slice
--- import Data.Array.Accelerate.Tabular.Classes.Fold
--- import Data.Array.Accelerate (inspectCompiler)
--- import Data.Array.Accelerate.Tabular.Prelude.Cartesian (cartesianWith)
--- import Data.Kind
--- import GHC.TypeError
--- import Data.Data
--- import Data.Array.Accelerate.Tabular.Util
--- import Data.Array.Accelerate.Tabular.Classes.Rep (Rep(orderedCreateMeta))
+type I1 = Z :. Int
+type I2 = Z :. Int :. Int
 
--- import Data.Array.Accelerate.Sugar.Array
--- import qualified Data.Array.Accelerate.Representation.Array as R
--- import Data.Array.Accelerate.Representation.Type (TupR(TupRpair))
--- import Unsafe.Coerce (unsafeCoerce)
--- import Control.Applicative (Const)
-
--- type I2 = Z :. Int :. Int
+type D1 = Z :. Dense
 type D2 = Z :. Dense :. Dense
 
--- type CD = Z :. Compressed :. Dense
-
--- type I1 = Z :. Int
--- type Sparse = Z :. Compressed
-
--- type H = Z :. Hashed
--- type HC = Z :. Hashed :. Compressed
-
--- type COO = Z :. NonUniqueCompressed :. UnsafeCompleteSingleton :. UnsafeCompleteSingleton
-
--- type I3 = Z :. Int :. Int :. Int
--- type CSF3 = Z :. Compressed :. Compressed :. Compressed
 
 
 main :: Prelude.IO ()
-main = Prelude.print $ run $ apsp @(Z :. Dense :. Compressed) distances
-  -- let kvs = use [(Z :. 0 :. 0, 0.0), (Z :. 0 :. 1, 0.1), (Z :. 1 :. 0, 1.0), (Z :. 1 :. 1, 1.1)]
-  -- in  Prelude.print $ run $ slice (Z_ ::. Keep_ ::. Slice_ 1) $ createTable @(Z :. Dense :. Dense) @(Z :. Int :. Int) @Float kvs
+main = let prog = assocs' . apsp @(Z :. Dense :. Dense)
+       in  do Prelude.putStrLn $ inspectCompiler @Native prog
+              Prelude.print $ run $ prog distances
 
 type Key = Z :. Int :. Int
 
 inf :: Exp Float
 inf = 1 / 0
 
-apsp :: forall rep. (Slice rep Key) => Acc (Table rep Key Float) -> Acc (Table rep Key Float)
+apsp :: forall rep. (Slice rep Key)
+     => Acc (Table rep Key Float)
+     -> Acc (Table rep Key Float)
 apsp ds = afor (unit n) update ds
   where
-    Z_ ::. n' ::. n'' = A.the $ A.maximum $ keys ds
+    Z_ ::. n' ::. n'' = the $ fold1All max $ keys ds
     n = max n' n''
 
-    update :: Acc (Scalar Int) -> Acc (Table rep Key Float) -> Acc (Table rep Key Float)
     update ak d = 
       let k = the ak
           toK   = slice @(Z :. Dense) (Z_ ::. Keep_    ::. Slice_ k) d
