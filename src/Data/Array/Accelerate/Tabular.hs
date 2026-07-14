@@ -16,6 +16,7 @@ module Data.Array.Accelerate.Tabular (
 , Dense
 , Compressed
 , Hashed
+, UnsafeCompleteSingleton
 
 -- ** Using custom key types.
 , SugarR

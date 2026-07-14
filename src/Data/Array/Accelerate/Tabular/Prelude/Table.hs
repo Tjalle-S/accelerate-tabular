@@ -41,6 +41,7 @@ import Data.Type.Equality
 import Data.Proxy
 import Data.Array.Accelerate.Tabular.Rep
 import Data.Array.Accelerate.Data.Maybe
+import qualified Data.Maybe as P
 
 -- | A table, consisting of metadata and values.
 --
@@ -82,6 +83,19 @@ instance (Elt a) => IsList (Vector a) where
     meta = Meta (Meta (), A.fromList Z [n])
   , vals = fromList (P.map Just xs)
   }
+
+instance (Eq key, Elt val) => IsList (Table Coo key val) where
+
+  type Item (Table Coo key val) = (key, val)
+
+  fromList xs = fromListN (P.length xs) xs
+  toList Table { meta = Meta keys, vals } = P.zip (toList keys) (P.map P.fromJust $ toList vals)
+
+  fromListN n xs = Table {
+    meta = Meta (fromListN n $ P.map P.fst xs)
+  , vals = fromListN n $ P.map (Just . P.snd) xs
+  }
+  
 
 -- | Convert an Accelerate array to a 'Vector'.
 fromArray :: (Elt a) => Acc (A.Vector a) -> Acc (Vector a)

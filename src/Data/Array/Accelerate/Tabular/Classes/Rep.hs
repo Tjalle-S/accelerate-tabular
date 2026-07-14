@@ -19,9 +19,9 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE DefaultSignatures #-}
 
-{-# OPTIONS_GHC -Wno-orphans #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 module Data.Array.Accelerate.Tabular.Classes.Rep (
   module Data.Array.Accelerate.Tabular.Classes.Rep
@@ -33,7 +33,6 @@ import Control.DeepSeq (NFData)
 import Data.Typeable
 import Data.Array.Accelerate.Tabular.Rep.GenProperties
 import Data.Kind (Constraint, Type)
-import Data.Type.Equality
 import qualified Prelude as P
 
 -- | Possible representations for tables with a given key type.

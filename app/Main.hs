@@ -27,7 +27,7 @@ type D2 = Z :. Dense :. Dense
 main :: Prelude.IO ()
 main = let prog = assocs' . apsp @(Z :. Dense :. Dense)
        in  do Prelude.putStrLn $ inspectCompiler @Native prog
-              Prelude.print $ run $ prog distances
+              -- Prelude.print $ run $ prog distances
 
 type Key = Z :. Int :. Int
 
@@ -72,6 +72,6 @@ afor :: (Arrays a) => Acc (Scalar Int)
                    -> Acc a
                    -> Acc a
 afor n f x = asnd $ awhile
-  (\(T2 i _)  -> unit (the i < the n))
+  (\(T2 i _)  -> cartesianWith (<) i n)
   (\(T2 i x') -> T2 (map (+ 1) i) (f i x'))
   (T2 (unit 0) x)

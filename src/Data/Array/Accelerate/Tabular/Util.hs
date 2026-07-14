@@ -20,11 +20,8 @@ module Data.Array.Accelerate.Tabular.Util (
 , lookupMany, lookup
 ) where
 
-import qualified Prelude as P
-
 import Data.Array.Accelerate
 import Data.Array.Accelerate.Unsafe (undef)
-import Data.Array.Accelerate.Control.Monad
 
 -- | Creates an empty (length-0) vector.
 --
