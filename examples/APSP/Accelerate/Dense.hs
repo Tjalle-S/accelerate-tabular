@@ -1,6 +1,6 @@
-{-# LANGUAGE ExplicitForAll      #-}
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE NoImplicitPrelude   #-}
+{-# LANGUAGE ExplicitForAll #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module APSP.Accelerate.Dense (apsp) where
 
@@ -13,14 +13,14 @@ apsp ds = aforArr (unit n) update ds
     Z_ ::. n' ::. n'' = shape ds
     n = max n' n''
 
-    update ak d = 
+    update ak d =
       let k = the ak
-      
-          toK   = slice d (Z_ ::. All_ ::. k)
-          fromK = slice d (Z_ ::. k    ::. All_)
 
-          toK'   = replicate (Z_ ::. All_ ::. k)    toK
-          fromK' = replicate (Z_ ::. k    ::. All_) fromK
+          toK = slice d (Z_ ::. All_ ::. k)
+          fromK = slice d (Z_ ::. k ::. All_)
+
+          toK' = replicate (Z_ ::. All_ ::. k) toK
+          fromK' = replicate (Z_ ::. k ::. All_) fromK
 
           viaK = zipWith (+) toK' fromK'
-      in  zipWith min viaK ds
+       in zipWith min viaK ds
