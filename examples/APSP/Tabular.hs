@@ -9,15 +9,17 @@ module APSP.Tabular (apsp) where
 
 import Common
 import Data.Array.Accelerate.Tabular
+import Data.Data (Proxy)
 
 type Edge = Z :. Int :. Int
 
 apsp ::
-  forall rep.
-  (Slice rep Edge) =>
+  forall rep rep'.
+  (Slice rep Edge, Rep rep' (Z :. Int)) =>
+  Proxy rep' ->
   Acc (Table rep Edge Float) ->
   Acc (Table rep Edge Float)
-apsp ds = aforTab (unit n) update ds
+apsp _ ds = aforTab (unit n) update ds
   where
     Z_ ::. n' ::. n'' = the $ fold1All max $ keys ds
     n = max n' n''
@@ -25,8 +27,8 @@ apsp ds = aforTab (unit n) update ds
     update ak d =
       let k = the ak
 
-          toK = slice @(Z :. Dense) (Z_ ::. Keep_ ::. Slice_ k) d
-          fromK = slice @(Z :. Dense) (Z_ ::. Slice_ k ::. Keep_) d
+          toK = slice @rep' (Z_ ::. Keep_ ::. Slice_ k) d
+          fromK = slice @rep' (Z_ ::. Slice_ k ::. Keep_) d
 
           viaK = cartesianWith @rep (+) toK fromK
        in fullOuterJoin @rep min inf inf d viaK
