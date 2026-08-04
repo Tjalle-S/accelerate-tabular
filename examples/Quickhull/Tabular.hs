@@ -51,7 +51,7 @@ initialize points =
                 else
                   if nonNormalizedDistance line p < 0
                     then T2 1 p
-                    else T2 (-1 :: Exp Int) p
+                    else T2 (-1) p
           )
           points
       remaining = filter @(Z :. Dense) (\_ -> not . (== (-1)) . fst) spoints
@@ -122,7 +122,7 @@ step (T2 segs hull) =
             mp = furthest ! (I1 s)
             decide p' =
               if nonNormalizedDistance (T2 p1 p') p > 0
-                then T2 (0 :: Exp Int) p
+                then T2 0 p
                 else
                   if nonNormalizedDistance (T2 p' p2) p > 0
                     then T2 1 p
