@@ -127,30 +127,30 @@ instance (Eq a, Eq b) => Sugar G (Either a b) where
 -- test :: Exp (Int, Int) -> Exp (Underlying G (Int, Int))
 -- test = toUnderlying (Proxy @G)
 
-data Point = Point Int Float
-  deriving (Generic, Elt, Sugar G)
+-- data Point = Point Int Float
+--   deriving (Generic, Elt, Sugar G)
 
-pattern Point_ :: Exp Int -> Exp Float -> Exp Point
-pattern Point_ { x_, y_ } = Pattern (x_, y_)
-{-# COMPLETE Point_ #-}
+-- pattern Point_ :: Exp Int -> Exp Float -> Exp Point
+-- pattern Point_ { x_, y_ } = Pattern (x_, y_)
+-- {-# COMPLETE Point_ #-}
 
-instance Eq Point where
-  p1 == p2 = x_ p1 == x_ p2 && y_ p1 == y_ p2
+-- instance Eq Point where
+--   p1 == p2 = x_ p1 == x_ p2 && y_ p1 == y_ p2
 
 
 
-data Test = Test Int Point
-  deriving (Generic, Elt, Sugar G)
+-- data Test = Test Int Point
+--   deriving (Generic, Elt, Sugar G)
 
-pattern Test_ :: Exp Int -> Exp Point -> Exp Test
-pattern Test_ p x = Pattern (p, x)
-{-# COMPLETE Test_ #-}
+-- pattern Test_ :: Exp Int -> Exp Point -> Exp Test
+-- pattern Test_ p x = Pattern (p, x)
+-- {-# COMPLETE Test_ #-}
 
-instance Eq Test where
-  (Test_ p1 x1) == (Test_ p2 x2) = p1 == p2 && x1 == x2
+-- instance Eq Test where
+--   (Test_ p1 x1) == (Test_ p2 x2) = p1 == p2 && x1 == x2
 
-instance (Sugar G a, Sugar G b) => Sugar G (a, b)
-instance (Sugar G a, Sugar G b, Sugar G c) => Sugar G (a, b, c)
+-- instance (Sugar G a, Sugar G b) => Sugar G (a, b)
+-- instance (Sugar G a, Sugar G b, Sugar G c) => Sugar G (a, b, c)
 
 
 -- test :: Exp (Underlying G (Int, Float)) -> Exp (Int, Float)

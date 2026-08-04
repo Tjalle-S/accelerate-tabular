@@ -19,14 +19,19 @@ module Data.Array.Accelerate.Tabular.Prelude (
 
 , tableDesugar, unsafeTableSugar
 
+, count
+, (++)
+
 , module Tabular.Prelude
 ) where
 
 import Data.Array.Accelerate hiding (
     Scalar, Vector, the, unit
-  , indexed, imap
+  , indexed, map, imap
   , filter
   , awhile
+  , (++)
+  , foldAll
   )
 import qualified Data.Array.Accelerate as A
 import Data.Array.Accelerate.Data.Functor
@@ -146,7 +151,7 @@ fullOuterJoin f dx dy xs ys =
             yks
             yvs
             (indexMany' xs yks)
-  in  createTable' NoAssumeOrdered (kvs1 ++ kvs2)
+  in  createTable' NoAssumeOrdered (kvs1 A.++ kvs2)
 
 -- | Convert a table using syntactic sugar for its keys to the underlying table.
 -- 
@@ -164,3 +169,12 @@ unsafeTableSugar :: (Rep (SugarR c rep) key, Elt val)
                  => Acc (Table rep            (Underlying c key) val)
                  -> Acc (Table (SugarR c rep) key                val)
 unsafeTableSugar Table_ { meta_, vals_ } = Table_  (toSurfaceMeta meta_) vals_
+
+-- | Count the number of entries in a table.
+-- 
+count :: (Rep rep key, Elt val) => Acc (Table rep key val) -> Acc (Scalar Int)
+count = foldAll (+) 0 . map (const 1)
+
+-- | Concatenate two 'Vector's.
+(++) :: (Elt a) => Acc (Vector a) -> Acc (Vector a) -> Acc (Vector a)
+xs ++ ys = fromArray (toArray xs A.++ toArray ys)

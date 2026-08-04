@@ -24,6 +24,8 @@ module Data.Array.Accelerate.Tabular.Prelude.Table (
 
 , emptyTable, createTable', createTable, orderedCreateTable
 , assumeOrdered
+
+, scalarFromAcc, scalarToAcc
 ) where
 
 import qualified Prelude as P
@@ -154,3 +156,9 @@ orderedCreateTable :: (Rep rep key, Elt val)
                    => Acc (Vector (key, val))
                    -> Acc (Table rep key val)
 orderedCreateTable = createTable' AssumeOrdered . toArray
+
+scalarFromAcc :: Elt a => Acc (A.Scalar a) -> Acc (Scalar a)
+scalarFromAcc x = Table_ (Meta_ (lift ())) (reshape (Z_ ::. 1) (A.map Just_ x))
+
+scalarToAcc :: Elt a => Acc (Scalar a) -> Acc (A.Scalar a)
+scalarToAcc = A.map fromJust . reshape Z_ . vals_

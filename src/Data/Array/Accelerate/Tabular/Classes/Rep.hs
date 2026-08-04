@@ -194,7 +194,7 @@ type family IfSnoc c rep key where
 type Unsnoc :: Type -> Type
 type family Unsnoc t where
   Unsnoc (ks :. k) = ks
-  Unsnoc a         = a
+  -- Unsnoc a         = a
 
 -- Generate helper functions and constraints for checking properties.
 genProperties [''Ordered]

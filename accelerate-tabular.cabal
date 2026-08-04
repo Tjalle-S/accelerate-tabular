@@ -81,6 +81,9 @@ executable accelerate-tabular-examples
       APSP.Accelerate.Dense
       APSP.Tabular
       Common
+      Quickhull.Accelerate
+      Quickhull.Common
+      Quickhull.Tabular
       Paths_accelerate_tabular
   autogen-modules:
       Paths_accelerate_tabular
@@ -94,9 +97,12 @@ executable accelerate-tabular-examples
     , accelerate-tabular
     , base >=4.16 && <5
     , containers-accelerate
+    , criterion
+    , criterion-measurement
     , deepseq
     , hashable-accelerate
     , microlens >=0.5.0.0 && <0.6
+    , random
     , template-haskell ==2.19.*
   default-language: Haskell2010
 
@@ -108,7 +114,7 @@ executable accelerate-tabular-exe
       Paths_accelerate_tabular
   hs-source-dirs:
       app
-  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N -with-rtsopts=-n2M -with-rtsopts=-A64M
   build-depends:
       accelerate
     , accelerate-llvm

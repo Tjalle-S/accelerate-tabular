@@ -5,6 +5,7 @@
 
 module Data.Array.Accelerate.Tabular (
   Table (..)
+, Vector
 
 , Rep
 
@@ -38,9 +39,10 @@ module Data.Array.Accelerate.Tabular (
 , index, (!?), indexMany
 , unsafeIndex, (!), unsafeIndexMany
 
-, map
+, map, imap
 , filter
 , assocs, keys, values
+, count, (++)
 
 -- ** Zipping/joining tables
 , innerJoin, leftOuterJoin, rightOuterJoin, fullOuterJoin
@@ -188,6 +190,7 @@ module Data.Array.Accelerate.Tabular (
 , (.), ($), (&), flip, error, undefined, P.id, const, otherwise
 , Show, Generic, HasCallStack
 , fromString -- -XOverloadedStrings
+, Proxy(..)
 -- , fromListN  -- -XOverloadedLists
 
 , type (~)
@@ -212,13 +215,14 @@ module Data.Array.Accelerate.Tabular (
 import qualified Prelude as P
 
 import Data.Array.Accelerate hiding (
-    map, filter
+    map, imap, filter
   , fold, fold1, foldAll, fold1All
   , slice
   , (!)
-  , Scalar, unit, the
+  , Scalar, Vector, unit, the
   , Slice
   , awhile
+  , (++)
   )
 
 import Data.Array.Accelerate.Tabular.Classes.IndexKey
@@ -228,3 +232,5 @@ import Data.Array.Accelerate.Tabular.Classes.Sugar
 import Data.Array.Accelerate.Tabular.Prelude.Cartesian
 import Data.Array.Accelerate.Tabular.Prelude
 import Data.Array.Accelerate.Tabular.Rep
+
+import Data.Data

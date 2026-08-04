@@ -9,7 +9,6 @@ module APSP.Tabular (apsp) where
 
 import Common
 import Data.Array.Accelerate.Tabular
-import Data.Data (Proxy)
 
 type Edge = Z :. Int :. Int
 

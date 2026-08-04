@@ -15,7 +15,7 @@ type CSRMatrix a = (Segments Int, Vector (Int, a))
 apsp :: Acc (CSRMatrix Float) -> Acc (CSRMatrix Float)
 apsp ds = aforArr (unit n) update ds
   where
-    n' = length (afst ds) - 1
+    n' = length (afst ds)
     n'' = the $ maximum (map fst $ asnd ds)
     n = max n' n''
 
@@ -23,16 +23,16 @@ apsp ds = aforArr (unit n) update ds
       let k = the ak
 
           origKvs =
-            let segBounds = scatter seg (fill (shape kvs) (0 :: Exp Int)) (fill (shape seg) 1)
-                ks = prescanl (+) 0 segBounds
+            let segBounds = scatter seg (fill (shape kvs) 0) (fill (shape seg) 1)
+                ks = postscanl (+) 0 segBounds
              in map (\(T2 k1 (T2 k2 v)) -> T2 (I2 k1 k2) v) (zip ks kvs)
 
           toK =
             let kvs' = filter (\(T2 (I2 _ k') _) -> k' == k) origKvs
              in map (\(T2 (I2 k' _) v) -> T2 k' v) (afst kvs')
           fromK =
-            let start = seg !! k
-                end = seg !! (k + 1)
+            let start = if k == 0 then 0 else seg !! (k - 1)
+                end = seg !! k
                 range = enumFromN (I1 $ end - start) start
              in gather range kvs
 
@@ -74,8 +74,10 @@ apsp ds = aforArr (unit n) update ds
 
 makeCSR :: (Elt a) => Acc (Vector (DIM2, a)) -> Acc (CSRMatrix a)
 makeCSR arr =
-  let (k1s, kvs) = unzip $ map (\(T2 (I2 k1 k2) v) -> T2 k1 (T2 k2 v)) arr
-      k1s' = histogram (I1 (k1s !! length k1s - 1)) (map I1 k1s)
+  let Z_ ::. n' ::. n'' = the $ maximum (map fst arr)
+      n = max n' n'' + 1
+      (k1s, kvs) = unzip $ map (\(T2 (I2 k1 k2) v) -> T2 k1 (T2 k2 v)) (sortBy (\x y -> compare (fst x) (fst y)) arr)
+      k1s' = histogram (I1 n) (map I1 k1s)
    in T2 (postscanl (+) 0 k1s') kvs
 
 -- | Lookup multiple keys in an association array.
