@@ -95,9 +95,8 @@ newtype Meta rep key = Meta (MetaR rep key)
   deriving (Generic)
 -- Note: this newtype is necessary because an associated type is not injective.
 -- Therefore, functions like 'emptyMeta' would't typecheck otherwise.
--- However, using a data family instead is impossible because we can't 
--- make instances for Lift/Unlift/Array, nor pattern synonyms.
--- That would make using them in embedded code impossible
+-- Using a data family would require manually deriving these type classes
+-- for each representation.
 
 deriving instance Show   (MetaR rep key) => Show   (Meta rep key)
 instance          Arrays (MetaR rep key) => Arrays (Meta rep key)

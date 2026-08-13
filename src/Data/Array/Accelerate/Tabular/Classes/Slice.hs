@@ -14,10 +14,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE UndecidableSuperClasses #-}
 {-# LANGUAGE StandaloneKindSignatures #-}
-
 
 module Data.Array.Accelerate.Tabular.Classes.Slice (
   Slice
@@ -33,7 +30,6 @@ import Data.Array.Accelerate hiding (Slice, slice, Any(..), Any_)
 import Data.Array.Accelerate.Tabular.Classes.Rep
 import Data.Array.Accelerate.Tabular.Classes.Fold
 
-import Data.Type.Equality
 import Data.Kind
 
 -- | Cut out this dimension by fixing it to a specific key.
@@ -112,22 +108,3 @@ type Inner :: Type -> Type
 type family Inner t where
   Inner (_ :. t) = t
   Inner t        = t
-
--- type SliceIfSnoc :: Type -> Type -> Constraint
--- type family SliceIfSnoc rep key where
---   SliceIfSnoc rep (keys :. key) = Slice (Unsnoc rep) keys
---   SliceIfSnoc _   _             = ()
-
--- type SameIfSnoc :: Type -> Type -> Constraint
--- type family SameIfSnoc rep key where
---   SameIfSnoc rep (keys :. key) = ((Unsnoc rep :. Inner rep) ~ rep, Slice (Unsnoc rep) keys, SameIfSnoc (Unsnoc rep) keys, Rep (Unsnoc (Unsnoc rep) :. Inner rep) (Unsnoc keys :. key))
---   SameIfSnoc rep key           = ()
-
-
--- | | | | | | | | -- Dense (7)  -- Keep
--- |0|0|1|0|0|0|0| -- Compressed -- Slice
--- |x|
--- | | | | |       -- Dense (4)  -- Keep
-
--- | | | | | | | | -- Dense
--- | | | | | | | | | | | | | | | | | ... (4 * 7 = 28)
