@@ -12,7 +12,6 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE BlockArguments #-}
 
 module Data.Array.Accelerate.Tabular.Rep.Singleton (
   UnsafeCompleteSingleton
@@ -27,16 +26,8 @@ import Data.Array.Accelerate.Tabular.Util
 import Data.Array.Accelerate.Unsafe (undef)
 import Data.Array.Accelerate.Tabular.Classes.Fold
 
-import Prelude (type (~))
-
 import Data.Proxy
 import Data.Array.Accelerate.Control.Monad
-import qualified Prelude as P
-
-
--- | Stores a single key on this level for each key in the parent levels.
---
-data Singleton
 
 -- | Stores a single key on this level for each key in the parent levels.
 -- Assumes that there is exactly 1 child key for each parent.
@@ -91,7 +82,8 @@ instance (Rep rep keys, Eq key) =>
     enumKeys SingletonMeta { met, ks } = zipWithChecked (::.) (enumKeys met) ks
 
 
-instance (Fold rep keys, Eq key) => Fold (rep :. UnsafeCompleteSingleton) (keys :.key) where
+instance (Fold rep keys, Eq key) =>
+  Fold (rep :. UnsafeCompleteSingleton) (keys :.key) where
 
   foldMeta d dmet@(Meta_ (T2 met _)) =
     case d of

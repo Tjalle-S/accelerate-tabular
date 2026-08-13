@@ -4,6 +4,7 @@
 {-# LANGUAGE BlockArguments       #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE ConstraintKinds      #-}  
+{-# LANGUAGE ExplicitForAll       #-}
 
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE DataKinds            #-}
@@ -11,16 +12,11 @@
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-{-# LANGUAGE ExplicitForAll #-}
-
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
 module Data.Array.Accelerate.Tabular.Prelude.Reindex (
   reindex, reindexUnique, reindex'
-
 ) where
-
-import Prelude (id)
 
 import Data.Array.Accelerate
 import Data.Array.Accelerate.Data.Functor

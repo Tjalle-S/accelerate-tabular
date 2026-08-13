@@ -1,6 +1,6 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 
-{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NamedFieldPuns    #-}
 
 module Data.Array.Accelerate.Tabular.Prelude.Assocs (
   assocs, assocs', massocs
@@ -14,7 +14,6 @@ import Data.Array.Accelerate.Data.Maybe
 import Data.Array.Accelerate.Data.Functor
 
 import Data.Array.Accelerate.Tabular.Classes.Rep
-import Data.Array.Accelerate.Tabular.Prelude.Map
 import Data.Array.Accelerate.Tabular.Prelude.Table
 
 -- | Return the key-value pairs present in a table.
@@ -41,11 +40,15 @@ massocs Table_ { meta_, vals_ } = zipWith
   (enumKeys meta_)
   vals_
 
+-- | Return the keys present in a table.
+--
 keys :: (Rep rep key, Elt val)
      => Acc (Table rep key val)
      -> Acc (Vector key)
 keys = fromArray . A.map fst . assocs'
 
+-- | Return the values present in a table.
+--
 values :: (Rep rep key, Elt val)
        => Acc (Table rep key val)
        -> Acc (Vector val)

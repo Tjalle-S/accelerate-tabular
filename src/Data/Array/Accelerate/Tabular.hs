@@ -48,6 +48,7 @@ module Data.Array.Accelerate.Tabular (
 , innerJoin, leftOuterJoin, rightOuterJoin, fullOuterJoin
 
 , cartesianWith
+, type (++)
 
 -- ** Folding over tables
 , Fold

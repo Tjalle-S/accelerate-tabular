@@ -3,13 +3,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE ExplicitForAll #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE UndecidableInstances #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 
 module Data.Array.Accelerate.Tabular.Prelude.Cartesian (
   type (++)
@@ -24,10 +18,17 @@ import Data.Array.Accelerate.Tabular.Classes.Rep
 import Data.Array.Accelerate.Tabular.Prelude.Assocs
 import Data.Array.Accelerate.Tabular.Prelude.Table
 
+-- | The type resulting from appending two keys.
+--
 type family xs ++ ys where
   xs ++ Z         = xs
   xs ++ (ys :. y) = (xs ++ ys) :. y
 
+-- Reference implementation of cartesian product.
+
+-- | Applies a function to all combinations of values in the tables.
+-- The corresponding keys are concatenated.
+-- 
 cartesianWith :: forall rep'' rep' rep key'' key' key c b a
               . ( Key key'
                 , Rep rep key, Rep rep' key', Rep rep'' key''
@@ -62,8 +63,6 @@ concatKey k k' =
     KeyRSnoc kr k'' -> case proveKey k kr of
       Dict' -> concatKey k kr ::. k''
 
-  --toKey $ concatKey' (getKeyR k) (getKeyR k')
-
 data KeyR key where
   KeyRZ    :: KeyR Z
   KeyRSnoc :: (Key keys, Elt key)
@@ -71,12 +70,6 @@ data KeyR key where
            -> Exp key
            -> KeyR (keys :. key)
 
-
--- concatKey' :: KeyR key -> KeyR key' -> KeyR (key ++ key')
--- concatKey' key KeyRZ           = key
--- concatKey' key (KeyRSnoc ks k) = KeyRSnoc (concatKey' key ks) k
-
--- Only require this for right key (can append to anything).
 
 class (Elt key) => Key key where
 
@@ -91,11 +84,6 @@ instance Key Z where
   toKey   _ = Z_
 
   proveKey _ _ = Dict'
-
--- instance (Sugar G a, Elt a) => Key a where
-
---   getKeyR = getKeyR . toUnderlying (Proxy @G)
-
 
 instance (Key key, Elt k) => Key (key :. k) where
 
