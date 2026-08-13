@@ -47,43 +47,57 @@ type Dense1 = Z :. Dense
 
 main :: IO ()
 main = do
-  (file : rest) <- getArgs
+  -- (file : rest) <- getArgs
   -- dat <- makeCooGraph file :: IO (Vector (DIM2, Float))
   -- P.print dat
-  !dat <- makePoints file
-  !datTab <- makePoints file
+  dat1 <- makeCooGraph "data/graph.in"
+  dat2 <- makeCooGraph "data/graph.in"
+
+  let !dat1' = force dat1
+  let !dat2' = force dat2
+
+  -- !datTab <- makePoints file
   -- P.print dat
 
   -- exitSuccess
 
-  -- !progDense <- timeIt "Dense" $ runN (Dense.apsp . toMatrix)
-  -- !progCSR   <- timeIt "CSR"   $ runN (CSR.apsp . CSR.makeCSR)
+  !progDense <- timeIt "Dense" $ runN (Dense.apsp . toMatrix)
+  !progCSR   <- timeIt "CSR"   $ runN (CSR.apsp . CSR.makeCSR)
+
+  progTabDense <- timeIt "Tab:Dense"
+    $ runN
+    $ (Tabular.apsp @(Dense1 :. Dense) @Dense1 Proxy) . createTable
+  progTabCSR <- timeIt "Tab:CSR"
+    $ runN
+    $ (Tabular.apsp @(Dense1 :. Compressed) @Dense1 Proxy) . createTable
   
-  !progQuickhullAcc <- timeIt "Accelerate" $ runN QA.quickhull
-  !progQuickhullTab <- timeIt "Tabular"    $ runN TA.quickhull
+  -- !progQuickhullAcc <- timeIt "Accelerate" $ runN QA.quickhull
+  -- !progQuickhullTab <- timeIt "Tabular"    $ runN TA.quickhull
 
-  !resAcc <- timeIt "Run: Accelerate" $ progQuickhullAcc (force dat)
-  !resTab <- timeIt "Run: Tabular"    $ progQuickhullTab (force datTab)
+  -- !resAcc <- timeIt "Run: Accelerate" $ progQuickhullAcc dat'
+  -- !resTab <- timeIt "Run: Tabular"    $ progQuickhullTab (force datTab)
 
-  P.print resAcc
-  P.print resTab
+  -- P.print (arraySize resAcc)
+  -- P.print resTab
+
+  !resDense <- timeIt "Run: Dense" $ (progDense dat1')
+  !resCSR   <- timeIt "Run: CSR"   $ (progCSR   dat1')
+
+  !resTabDense <- timeIt "Run: Tab Dense" $ progTabDense dat2'
+  !resTabCSR   <- timeIt "Run: Tab CSR"   $ progTabCSR   dat2'
 
 
-
-  -- P.print (arraySize $ P.snd $ progCSR dat)
-  -- P.print (arraySize $ P.snd $ progCSR dat)
+  P.print (arraySize resDense)
+  P.print (arraySize $ P.snd resCSR)
+  P.print (arraySize $ vals resTabDense)
+  P.print (arraySize $ vals resTabCSR)
 
   -- let !progQuickhull = arraySize . runN QA.quickhull
   -- P.print $ arraySize $ P.snd $ progCSR dat
 
   -- test "Dense" progDense dat
   -- test "CSR"   progCSR   dat
-  -- progTabDense <- timeIt "Tab:Dense"
-  --   $ runN
-  --   $ (Tabular.apsp @(Dense1 :. Dense) @Dense1 Proxy) . createTable
-  -- progTabCSR <- timeIt "Tab:CSR"
-  --   $ runN
-  --   $ (Tabular.apsp @(Dense1 :. Compressed) @Dense1 Proxy) . createTable
+
   
 
 
@@ -117,10 +131,10 @@ main = do
   --       ]
   --     ]
 
-timeIt :: String -> a -> IO a
+timeIt :: NFData a => String -> a -> IO a
 timeIt name x = do
   t1 <- getCPUTime
-  let !y = x
+  let !y = force x
   t2 <- getCPUTime
   let t = (fromIntegral (t2 - t1) :: Double) * 1e-12
   printf (name ++ ":\n%6.2fs\n") t
