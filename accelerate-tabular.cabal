@@ -39,11 +39,11 @@ library
       Data.Array.Accelerate.Tabular.Prelude.Filter
       Data.Array.Accelerate.Tabular.Prelude.Fold
       Data.Array.Accelerate.Tabular.Prelude.Index
+      Data.Array.Accelerate.Tabular.Prelude.Join
       Data.Array.Accelerate.Tabular.Prelude.Map
       Data.Array.Accelerate.Tabular.Prelude.Reindex
       Data.Array.Accelerate.Tabular.Prelude.Slice
       Data.Array.Accelerate.Tabular.Prelude.Table
-      Data.Array.Accelerate.Tabular.Prelude.Zip
       Data.Array.Accelerate.Tabular.Rep
       Data.Array.Accelerate.Tabular.Rep.Compressed
       Data.Array.Accelerate.Tabular.Rep.Coo

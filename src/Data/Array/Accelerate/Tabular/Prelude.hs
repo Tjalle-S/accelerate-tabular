@@ -15,8 +15,6 @@ module Data.Array.Accelerate.Tabular.Prelude (
 
 , awhile
 
-, innerJoin, leftOuterJoin, rightOuterJoin, fullOuterJoin
-
 , tableDesugar, unsafeTableSugar
 
 , count
@@ -34,7 +32,6 @@ import Data.Array.Accelerate hiding (
   , foldAll
   )
 import qualified Data.Array.Accelerate as A
-import Data.Array.Accelerate.Data.Functor
 import Data.Array.Accelerate.Data.Maybe
 
 import Data.Array.Accelerate.Tabular.Classes.Rep
@@ -43,11 +40,11 @@ import Data.Array.Accelerate.Tabular.Prelude.Assocs  as Tabular.Prelude
 import Data.Array.Accelerate.Tabular.Prelude.Filter  as Tabular.Prelude
 import Data.Array.Accelerate.Tabular.Prelude.Fold    as Tabular.Prelude
 import Data.Array.Accelerate.Tabular.Prelude.Index   as Tabular.Prelude
+import Data.Array.Accelerate.Tabular.Prelude.Join    as Tabular.Prelude
 import Data.Array.Accelerate.Tabular.Prelude.Map     as Tabular.Prelude
 import Data.Array.Accelerate.Tabular.Prelude.Reindex as Tabular.Prelude
 import Data.Array.Accelerate.Tabular.Prelude.Slice   as Tabular.Prelude
 import Data.Array.Accelerate.Tabular.Prelude.Table   as Tabular.Prelude
-import Data.Array.Accelerate.Tabular.Prelude.Zip     as Tabular.Prelude
 import Data.Array.Accelerate.Tabular.Rep.Sugar
 import Data.Array.Accelerate.Tabular.Util (singleton)
 
@@ -79,80 +76,6 @@ awhile :: (Arrays a)
        -> Acc a
 awhile c = A.awhile (A.unit . the . c)
 
--- Reference implementations for joins.
-
-innerJoin :: forall rep'' rep' rep key c b a
-          . ( Rep rep key, Rep rep' key, Rep rep'' key
-            , Elt a, Elt b, Elt c
-            )
-          => (Exp a -> Exp b -> Exp c)
-          -> Acc (Table rep key a)
-          -> Acc (Table rep' key b)
-          -> Acc (Table rep'' key c)
-innerJoin f xs ys =
-  let (xks, xvs) = unzip (assocs' xs)
-      yvs  = indexMany' ys xks
-      kvs = afst
-          $ justs
-          $ zipWith3 (\k a mb -> T2 k <$> maybe Nothing_ (Just_ . f a) mb)
-            xks
-            xvs
-            yvs
-  in  createTable' (assumeOrdered xs) kvs
-
-leftOuterJoin :: forall rep'' rep' rep key c b a
-              . ( Rep rep key, Rep rep' key, Rep rep'' key
-                , Elt a, Elt b, Elt c
-                )
-              => (Exp a -> Exp b -> Exp c)
-              -> Exp b
-              -> Acc (Table rep key a)
-              -> Acc (Table rep' key b)
-              -> Acc (Table rep'' key c)
-leftOuterJoin f d xs ys =
-  let (xks, xvs) = unzip (assocs' xs)
-      yvs  = indexMany' ys xks
-      kvs = zipWith3 (\k a mb -> T2 k $ f a (fromMaybe d mb))
-            xks
-            xvs
-            yvs
-  in  createTable' (assumeOrdered xs) kvs
-
-rightOuterJoin :: forall rep'' rep' rep key c b a
-               . ( Rep rep key, Rep rep' key, Rep rep'' key
-                 , Elt a, Elt b, Elt c
-                 )
-              => (Exp a -> Exp b -> Exp c)
-              -> Exp a
-              -> Acc (Table rep key a)
-              -> Acc (Table rep' key b) 
-              -> Acc (Table rep'' key c)
-rightOuterJoin f d = flip $ leftOuterJoin (flip f) d
-
-fullOuterJoin :: forall rep'' rep' rep key c b a
-              . ( Rep rep key, Rep rep' key, Rep rep'' key
-                , Elt a, Elt b, Elt c
-                )
-              => (Exp a -> Exp b -> Exp c)
-              -> Exp a
-              -> Exp b
-              -> Acc (Table rep key a)
-              -> Acc (Table rep' key b) 
-              -> Acc (Table rep'' key c)
-fullOuterJoin f dx dy xs ys =
-  let (xks, xvs) = unzip (assocs' xs)
-      (yks, yvs) = unzip (assocs' ys)
-
-      kvs1 = zipWith3 (\k a mb -> T2 k $ f a (fromMaybe dy mb))
-            xks
-            xvs
-            (indexMany' ys xks)
-      kvs2 = zipWith3 (\k b ma -> T2 k $ f (fromMaybe dx ma) b)
-            yks
-            yvs
-            (indexMany' xs yks)
-  in  createTable' NoAssumeOrdered (kvs1 A.++ kvs2)
-
 -- | Convert a table using syntactic sugar for its keys to the underlying table.
 -- 
 tableDesugar :: (Rep (SugarR c rep) key, Elt val)
@@ -176,5 +99,6 @@ count :: (Rep rep key, Elt val) => Acc (Table rep key val) -> Acc (Scalar Int)
 count = foldAll (+) 0 . map (const 1)
 
 -- | Concatenate two 'Vector's.
+--
 (++) :: (Elt a) => Acc (Vector a) -> Acc (Vector a) -> Acc (Vector a)
 xs ++ ys = fromArray (toArray xs A.++ toArray ys)
