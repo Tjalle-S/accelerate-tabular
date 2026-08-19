@@ -14,6 +14,10 @@
 module Data.Array.Accelerate.Tabular.Prelude.Cartesian (
   type (++)
 , cartesianWith
+, concatKey
+, Key (..)
+, KeyR (..)
+, SomeKeyR (..)
 ) where
 
 import Data.Array.Accelerate
@@ -26,7 +30,7 @@ import Data.Array.Accelerate.Tabular.Prelude.Table
 
 import Data.Type.Equality
 import Data.Data
-import Data.Array.Accelerate.Tabular.Classes.Sugar
+-- import Data.Array.Accelerate.Tabular.Classes.Sugar
 
 type family xs ++ ys where
   xs ++ Z         = xs
@@ -86,7 +90,10 @@ class (Elt key) => Key key where
   getKeyR :: Exp key -> KeyR key
   toKey :: KeyR key -> Exp key
 
-  proveKey :: (Elt k) => Exp k -> KeyR key -> Dict' Elt (k ++ key)
+  proveKey  :: (Elt k) => Exp k -> KeyR key -> Dict' Elt (k ++ key)
+
+  proveKey' :: Key k => Proxy k -> Proxy key -> Dict' Key (k ++ key)
+  -- proveKey' :: (Key k) => Exp k -> KeyR key -> Dict' Key (k ++ key)
 
 instance Key Z where
 
@@ -95,9 +102,7 @@ instance Key Z where
 
   proveKey _ _ = Dict'
 
--- instance (Sugar G a, Elt a) => Key a where
-
---   getKeyR = getKeyR . toUnderlying (Proxy @G)
+  proveKey' _ _ = Dict'
 
 
 instance (Key key, Elt k) => Key (key :. k) where
@@ -107,3 +112,15 @@ instance (Key key, Elt k) => Key (key :. k) where
   
   proveKey p (KeyRSnoc ks _) = case proveKey p ks of
     Dict' -> Dict'
+
+  proveKey' p _ = case proveKey' p (Proxy @key) of
+    Dict' -> Dict'
+
+data SomeKeyR where
+  TheKeyR :: KeyR key -> SomeKeyR 
+
+  -- proveKey' p (KeyRSnoc ks _) = case proveKey' p ks of
+  --   Dict' -> Dict'
+
+-- proveKey :: forall keys key . (Key key, Key keys) => Exp keys -> KeyR key -> Dict' Key (keys ++ key)
+-- proveKey _ _ = proveKey' @key @keys Proxy Proxy

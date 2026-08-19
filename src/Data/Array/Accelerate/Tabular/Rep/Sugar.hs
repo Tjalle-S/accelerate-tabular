@@ -9,25 +9,13 @@
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
-{-# LANGUAGE DeriveGeneric         #-}
-{-# LANGUAGE StandaloneDeriving    #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE StandaloneKindSignatures #-}
-{-# LANGUAGE TypeOperators #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE ConstraintKinds #-}
-
-{-# OPTIONS_GHC -ddump-splices #-}
-{-# OPTIONS_GHC -ddump-to-file #-}
+{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
 
 module Data.Array.Accelerate.Tabular.Rep.Sugar (
   SugarR
 , toUnderlyingMeta
 , toSurfaceMeta
-, Test
 ) where
 
 import Data.Array.Accelerate hiding (Slice)
@@ -41,6 +29,9 @@ import Data.Array.Accelerate.Tabular.Classes.Sugar
 import Data.Coerce
 import Lens.Micro
 import Data.Array.Accelerate.Data.Lens ()
+import Data.Array.Accelerate.Tabular.Classes.Fold
+import Data.Array.Accelerate.Tabular.Prelude.Cartesian
+import Data.Kind
 
 -- | A representation with a layer of syntacic sugar over the key.
 --
@@ -54,7 +45,7 @@ import Data.Array.Accelerate.Data.Lens ()
 --
 data SugarR c rep
 
-instance (Sugar c key, Rep rep (Underlying c key), Eq key)
+instance (Sugar c key, Rep rep (Underlying c key), Eq key, Key (Underlying c key))
   => Rep (SugarR c rep) key where
 
   type MetaR (SugarR c rep) key = MetaR rep (Underlying c key)
@@ -76,7 +67,7 @@ instance (Sugar c key, Rep rep (Underlying c key), Eq key)
   enumKeys = map (toSurface $ Proxy @c) . enumKeys @rep . toUnderlyingMeta
   
 
-instance (Sugar c key, Index rep (Underlying c key), Eq key)
+instance (Sugar c key, Index rep (Underlying c key), Eq key, Key (Underlying c key))
   => Index (SugarR c rep) key where
 
   toLinearIndex   met = toLinearIndex (toUnderlyingMeta met)
@@ -88,9 +79,6 @@ instance (Sugar c key, Index rep (Underlying c key), Eq key)
                             . toUnderlying (Proxy @c)
   unsafeToLinearIndices met = unsafeToLinearIndices (toUnderlyingMeta met)
                             . map (toUnderlying $ Proxy @c)
-
-instance (Sugar c key, Rep rep (Underlying c key), Eq key)
-  => Slice (SugarR c rep) key
 
 -- | Safely coerce table metadata for a surface key type to the one
 -- underlying it.
@@ -106,15 +94,3 @@ toSurfaceMeta :: (Rep (SugarR c rep) key)
               => Acc (Meta rep (Underlying c key))
               -> Acc (Meta (SugarR c rep) key)
 toSurfaceMeta (Meta_ met) = Meta_ (coerce met)
-
-
-data Test a b = Test (Maybe a) b Bool
-  deriving (Generic, Elt)
-
-genSugar ''Test
-
-
--- data Test2 = Test2 (Maybe Int) Bool
---   deriving (Generic, Elt)
-
--- mkPattern ''Test2
