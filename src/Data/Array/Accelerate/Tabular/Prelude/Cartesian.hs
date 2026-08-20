@@ -18,11 +18,7 @@ import Data.Array.Accelerate.Tabular.Classes.Rep
 import Data.Array.Accelerate.Tabular.Prelude.Assocs
 import Data.Array.Accelerate.Tabular.Prelude.Table
 
--- | The type resulting from appending two keys.
---
-type family xs ++ ys where
-  xs ++ Z         = xs
-  xs ++ (ys :. y) = (xs ++ ys) :. y
+import Data.Array.Accelerate.Tabular.Classes.Key
 
 -- Reference implementation of cartesian product.
 
@@ -52,43 +48,3 @@ cartesianWith f xs ys =
     combine (T2 xk xv) (T2 yk yv) =
       let k' = concatKey xk (getKeyR yk)
       in  T2 k' (f xv yv)
-
-concatKey :: (Elt key, key'' ~ key ++ key')
-          => Exp key
-          -> KeyR key'
-          -> Exp key''
-concatKey k k' =
-  case k' of
-    KeyRZ -> k
-    KeyRSnoc kr k'' -> case proveKey k kr of
-      Dict' -> concatKey k kr ::. k''
-
-data KeyR key where
-  KeyRZ    :: KeyR Z
-  KeyRSnoc :: (Key keys, Elt key)
-           => KeyR keys
-           -> Exp key
-           -> KeyR (keys :. key)
-
-
-class (Elt key) => Key key where
-
-  getKeyR :: Exp key -> KeyR key
-  toKey :: KeyR key -> Exp key
-
-  proveKey :: (Elt k) => Exp k -> KeyR key -> Dict' Elt (k ++ key)
-
-instance Key Z where
-
-  getKeyR _ = KeyRZ
-  toKey   _ = Z_
-
-  proveKey _ _ = Dict'
-
-instance (Key key, Elt k) => Key (key :. k) where
-
-  getKeyR (ks ::. k) = KeyRSnoc (getKeyR ks) k
-  toKey (KeyRSnoc ks k) = toKey ks ::. k
-  
-  proveKey p (KeyRSnoc ks _) = case proveKey p ks of
-    Dict' -> Dict'

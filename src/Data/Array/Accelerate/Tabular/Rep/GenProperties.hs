@@ -1,3 +1,7 @@
+-- 
+-- Generated with the help of ChatGPT.
+--
+
 {-# LANGUAGE TemplateHaskellQuotes #-}
 
 module Data.Array.Accelerate.Tabular.Rep.GenProperties (

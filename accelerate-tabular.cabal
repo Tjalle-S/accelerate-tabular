@@ -29,6 +29,7 @@ library
       Data.Array.Accelerate.Tabular
       Data.Array.Accelerate.Tabular.Classes.Fold
       Data.Array.Accelerate.Tabular.Classes.IndexKey
+      Data.Array.Accelerate.Tabular.Classes.Key
       Data.Array.Accelerate.Tabular.Classes.Rep
       Data.Array.Accelerate.Tabular.Classes.Slice
       Data.Array.Accelerate.Tabular.Classes.Sugar

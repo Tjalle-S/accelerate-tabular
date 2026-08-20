@@ -27,6 +27,7 @@ import Data.Array.Accelerate hiding (Slice)
 
 import Data.Data
 
+import Data.Array.Accelerate.Tabular.Classes.Key
 import Data.Array.Accelerate.Tabular.Classes.Rep
 import Data.Array.Accelerate.Tabular.Classes.Slice
 import Data.Array.Accelerate.Tabular.Classes.Sugar
@@ -47,7 +48,7 @@ import Data.Array.Accelerate.Data.Lens ()
 --
 data SugarR c rep
 
-instance (Sugar c key, Rep rep (Underlying c key), Eq key)
+instance (Sugar c key, Rep rep (Underlying c key), Eq key, Key (Underlying c key))
   => Rep (SugarR c rep) key where
 
   type MetaR (SugarR c rep) key = MetaR rep (Underlying c key)
@@ -69,7 +70,7 @@ instance (Sugar c key, Rep rep (Underlying c key), Eq key)
   enumKeys = map (toSurface $ Proxy @c) . enumKeys @rep . toUnderlyingMeta
   
 
-instance (Sugar c key, Index rep (Underlying c key), Eq key)
+instance (Sugar c key, Index rep (Underlying c key), Eq key, Key (Underlying c key))
   => Index (SugarR c rep) key where
 
   toLinearIndex   met = toLinearIndex (toUnderlyingMeta met)
@@ -82,7 +83,7 @@ instance (Sugar c key, Index rep (Underlying c key), Eq key)
   unsafeToLinearIndices met = unsafeToLinearIndices (toUnderlyingMeta met)
                             . map (toUnderlying $ Proxy @c)
 
-instance (Sugar c key, Rep rep (Underlying c key), Eq key)
+instance (Sugar c key, Rep rep (Underlying c key), Eq key, Key (Underlying c key))
   => Slice (SugarR c rep) key
 
 -- | Safely coerce table metadata for a surface key type to the one

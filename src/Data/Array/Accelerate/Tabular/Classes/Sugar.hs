@@ -10,7 +10,6 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE PatternSynonyms #-}
@@ -18,20 +17,29 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE TemplateHaskell #-}
 
-module Data.Array.Accelerate.Tabular.Classes.Sugar where
+{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE ImpredicativeTypes #-}
+
+module Data.Array.Accelerate.Tabular.Classes.Sugar (
+  Sugar (..)
+, G
+, genSugar, genSugars
+) where
 
 import qualified Prelude as P
 
 import Data.Array.Accelerate
 
-import Data.Array.Accelerate.Tabular.Classes.Rep ()
+import Data.Array.Accelerate.Tabular.Classes.Fold
+import Data.Array.Accelerate.Tabular.Classes.Key
 
 import Data.Data
--- import Language.Haskell.TH hiding (Exp)
-import GHC.Generics
-import Data.Coerce
-import Data.Array.Accelerate.Smart
+import Language.Haskell.TH hiding (Exp)
+import qualified Language.Haskell.TH as TH
+import Control.Monad
+import Unsafe.Coerce (unsafeCoerce)
 
 -- | Specify a conversion from a surface type @key@ to an underlying type
 -- is supported by generic representations (built using 'Z' and '(:.)').
@@ -42,198 +50,183 @@ import Data.Array.Accelerate.Smart
 -- The index 'G' can be used to specify a generically derived conversion.
 -- This derivation can be requested using @deriving ('Generic', 'Sugar' 'G')@,
 -- using the @DeriveGeneric@ and @DeriveAnyClass@ language extensions.
-
-class () => Sugar c key where
+--
+class (Elt key) => Sugar c key where
 
   type Underlying c key
-  type Underlying c key = Underlying' c key Z
 
-  type Underlying' c key prefix
-  type Underlying' c key prefix = GUnderlying (Rep key) prefix
+  toUnderlying :: Proxy c -> Exp key -> Exp (Underlying c key)
+  toSurface :: (Key (Underlying c key)) => Proxy c -> Exp (Underlying c key) -> Exp key
+  toSurface proxy = P.snd . toSurface' proxy . TheKeyR . getKeyR
 
-  toUnderlying   :: Proxy c -> Exp key -> Exp (Underlying c key)
-  -- default toUnderlying :: (Generic key) => Proxy G -> Exp key -> Exp (Underlying G key)
-  -- toUnderlying _ key = gToUnderlying 
-  toSurface      :: Proxy c -> Exp (Underlying c key) -> Exp key
+  toSurface' :: (Key (Underlying c key)) => Proxy c -> SomeKeyR -> (SomeKeyR, Exp key)
+  toSurface' proxy (TheKeyR keyr) = (TheKeyR KeyRZ, toSurface proxy (toKey $ unsafeCoerce keyr))
 
-data Id 
-
-instance (Eq key) => Sugar Id key where
-  
-  type Underlying Id key = key
-
-  type Underlying' Id key prefix = prefix :. key
-
-  toUnderlying _ = P.id
-  toSurface    _ = P.id
-
+  {-# MINIMAL toUnderlying, (toSurface | toSurface') #-}
 
 data G
 
-class (Eq (GUnderlying f Z)) => GConvert f where
+genSugars :: [Name] -> Q [Dec]
+genSugars = fmap P.concat . mapM genSugar
 
-  type GUnderlying f prefix
+genSugar :: Name -> Q [Dec]
+genSugar name = do
+  info <- reify name
+  case info of
+    TyConI dec -> genSugarDec dec
+    _          -> fail "Expected type or newtype"
 
-  gToUnderlying :: prefix -> f a -> GUnderlying f prefix
+genSugarDec :: Dec -> Q [Dec]
+genSugarDec (NewtypeD _ name tv _ con   _) = genSugarDataD name tv con
+genSugarDec (DataD    _ name tv _ [con] _) = genSugarDataD name tv con
+genSugarDec (DataD    _ _    _  _ _     _) = fail "Sum types not supported"
+genSugarDec _                              = fail "Expected newtype or data declaration"
 
-instance GConvert U1 where
+genSugarDataD :: Name -> [TyVarBndr a] -> Con -> Q [Dec]
+genSugarDataD name tvs con = do
+  let fullName = P.foldl appTyVar (conT name) tvs
+  [d|
+    instance $(getCxt tvs con) => Sugar G $fullName where
 
-  type GUnderlying U1 prefix = prefix
+      type Underlying G $fullName = $(getUnderlying con)
 
-  gToUnderlying prf _ = prf
+      toUnderlying _ = $(genToUnderlying con)
+      toSurface    _ = undefined
+    |]
 
-instance GConvert a => GConvert (M1 i c a) where
+appTyVar :: Q Type -> TyVarBndr a -> Q Type
+appTyVar t (PlainTV  n _)   = appT t (varT n)
+appTyVar t (KindedTV n _ _) = appT t (varT n)
 
-  type GUnderlying (M1 i c a) prefix = GUnderlying a prefix
-
-
-instance (Sugar G a, Eq (Underlying' G a Z)) => GConvert (K1 i a) where
-
-  type GUnderlying (K1 i a) prefix = Underlying' G a prefix
-
+varTFromBndr :: TyVarBndr a -> Type
+varTFromBndr (PlainTV  n _)   = VarT n
+varTFromBndr (KindedTV n _ _) = VarT n
 
 
-instance (GConvert a, GConvert b, Eq (GUnderlying b (GUnderlying a Z))) => GConvert (a :*: b) where
+getCxt :: [TyVarBndr a] -> Con -> Q Type
+getCxt tvs (NormalC _ ts) = getCxt' tvs ts
+getCxt tvs (RecC    _ ts) = getCxt' tvs $ P.map (\(_, y, z) -> (y, z)) ts
+getCxt tvs (InfixC a _ b) = getCxt' tvs [a, b]
+getCxt _   _              = fail "Only vanilla constructors supported"
 
-  type GUnderlying (a :*: b) prefix = GUnderlying b (GUnderlying a prefix)
+getCxt' :: [TyVarBndr a] -> [BangType] -> Q Type
+getCxt' tvs ts = do
+  let sugar = ''Sugar
+  Just g <- lookupTypeName "G"
+  Just elt <- lookupTypeName "Elt"
+  let sugarG = AppT (ConT sugar) (ConT g)
+  let cSugar = P.map (AppT sugarG . P.snd) ts
+  let cElt   = P.map (AppT (ConT elt) . varTFromBndr) tvs
+  let cKey = P.map (\t -> ConT ''Key `AppT` (ConT ''Underlying `AppT` ConT ''G `AppT` P.snd t)) ts
+  let cs = cSugar P.++ cKey P.++ cElt
+  return $ P.foldl AppT (TupleT $ P.length cs) cs
 
+getUnderlying :: Con -> Q Type
+getUnderlying (NormalC _ ts) =
+  getUnderlying' (P.map P.snd ts)
+getUnderlying (RecC    _ ts) =
+  getUnderlying' (P.map (\(_, _, z) -> z) ts)
+getUnderlying (InfixC a _ b) =
+  getUnderlying' [P.snd a, P.snd b]
+getUnderlying _ = fail "Only vanilla constructors supported"
+
+getUnderlying' :: [Type] -> Q Type
+getUnderlying' = P.foldl
+  (\x -> combineType ''(++) x
+       . (conT ''Underlying `appT` conT ''G `appT`)
+       . return)
+  (conT ''Z)
+
+genToUnderlying :: Con -> Q TH.Exp
+genToUnderlying (NormalC _ ts) = genToUnderlying' (P.map P.snd ts)
+genToUnderlying (RecC    _ ts) = genToUnderlying' (P.map (\(_, _, z) -> z) ts)
+genToUnderlying (InfixC a _ b) = genToUnderlying' [P.snd a, P.snd b]
+genToUnderlying _              = fail "Only vanilla constructors supported"
+
+genToUnderlying' :: [Type] -> Q TH.Exp
+genToUnderlying' ts = do
+  namesIn   <- replicateM (P.length ts) (newName "x")
+  namesKeyR <- replicateM (P.length ts) (newName "x'")
+  namesRes  <- replicateM (P.length ts) (newName "r")
+
+  let pat = conP 'Pattern [ tupP $
+        P.zipWith
+          (\nm t -> sigP (varP nm) (conT ''Exp `appT` return t))
+          namesIn
+          ts ]
+
+      resDec 0 = [d|$(varP $ namesRes P.!! 0) =
+                      concatKey
+                        Z_
+                        $(varE $ namesKeyR P.!! 0)
+                   |]
+      resDec n = [d|$(varP $ namesRes P.!! n) =
+                      concatKey
+                        $(varE $ namesRes P.!! (n - 1))
+                        $(varE $ namesKeyR P.!! n)
+                   |]
+
+      makeDict 0 = [|withDict' (proveKey
+        Z_
+        $(varE $ namesKeyR P.!! 0))|]
+      makeDict n = [|withDict' (proveKey
+        $(varE $ namesRes P.!! (n - 1))
+        $(varE $ namesKeyR P.!! n))|]
+
+      res n = do
+        dec  <- resDec n
+        let dict = makeDict n
+        let res' = if n P.== (P.length ts - 1)
+                     then varE $ P.last namesRes
+                     else res (n + 1)
+        
+        LetE dec P.<$> (dict `appE` res')
+
+      result = if P.null ts
+                 then [|Z_|]
+                 else res 0
+
+  keyRDecs <- P.fmap P.concat
+            $ sequence
+            $ P.zipWith (\i o ->
+              [d|$(varP o) = getKeyR (toUnderlying @G Proxy $(varE i))|])
+              namesIn
+              namesKeyR
+
+  let body = LetE keyRDecs P.<$> result
+
+  lam1E pat body
+
+combineType :: Name -> Q Type -> Q Type -> Q Type
+combineType nm x y = conT nm `appT` x `appT` y 
 
 instance Sugar G Bool where
 
-  type Underlying' G Bool prefix = prefix :. Bool
+  type Underlying G Bool = Z :. Bool
+
+  toUnderlying _ x = Z_ ::. x
+  toSurface    _ (Z_ ::. x) = x
+
+  toSurface' _ (TheKeyR (KeyRSnoc rest x)) = (TheKeyR rest, unsafeCoerce x)
+  toSurface' _ _ = error "toSurface': Key does not contain Bool."
 
 instance Sugar G Int where
 
-  type Underlying' G Int prefix = prefix :. Int
+  type Underlying G Int = Z :. Int
 
-  toUnderlying _ x          = Z_ ::. x
+  toUnderlying _ x = Z_ ::. x
   toSurface    _ (Z_ ::. x) = x
 
 instance Sugar G Float where
 
-  type Underlying' G Float prefix = prefix :. Float
+  type Underlying G Float = Z :. Float
 
-  toUnderlying _ x          = Z_ ::. x
+  toUnderlying _ x = Z_ ::. x
   toSurface    _ (Z_ ::. x) = x
 
 instance (Eq a) => Sugar G (Maybe a) where
 
-  type Underlying' G (Maybe a) prefix = prefix :. Maybe a
+  type Underlying G (Maybe a) = Z :. (Maybe a)
 
-instance (Eq a, Eq b) => Sugar G (Either a b) where
-
-  type Underlying' G (Either a b) prefix = prefix :. Either a b
-
--- test :: Exp (Int, Int) -> Exp (Underlying G (Int, Int))
--- test = toUnderlying (Proxy @G)
-
--- data Point = Point Int Float
---   deriving (Generic, Elt, Sugar G)
-
--- pattern Point_ :: Exp Int -> Exp Float -> Exp Point
--- pattern Point_ { x_, y_ } = Pattern (x_, y_)
--- {-# COMPLETE Point_ #-}
-
--- instance Eq Point where
---   p1 == p2 = x_ p1 == x_ p2 && y_ p1 == y_ p2
-
-
-
--- data Test = Test Int Point
---   deriving (Generic, Elt, Sugar G)
-
--- pattern Test_ :: Exp Int -> Exp Point -> Exp Test
--- pattern Test_ p x = Pattern (p, x)
--- {-# COMPLETE Test_ #-}
-
--- instance Eq Test where
---   (Test_ p1 x1) == (Test_ p2 x2) = p1 == p2 && x1 == x2
-
--- instance (Sugar G a, Sugar G b) => Sugar G (a, b)
--- instance (Sugar G a, Sugar G b, Sugar G c) => Sugar G (a, b, c)
-
-
--- test :: Exp (Underlying G (Int, Float)) -> Exp (Int, Float)
--- test = toSurface (Proxy @G)
-
-
--- runQ $ do
---   let
---       integralTypes :: [Name]
---       integralTypes =
---         [ ''Int
---         , ''Int8
---         , ''Int16
---         , ''Int32
---         , ''Int64
---         , ''Word
---         , ''Word8
---         , ''Word16
---         , ''Word32
---         , ''Word64
---         ]
-
---       floatingTypes :: [Name]
---       floatingTypes =
---         [ ''Half
---         , ''Float
---         , ''Double
---         ]
-
---       newtypes :: [Name]
---       newtypes =
---         [ ''CShort
---         , ''CUShort
---         , ''CInt
---         , ''CUInt
---         , ''CLong
---         , ''CULong
---         , ''CLLong
---         , ''CULLong
---         , ''CFloat
---         , ''CDouble
---         , ''CChar
---         , ''CSChar
---         , ''CUChar
---         ]
-
---       mkSimple :: Name -> Q [Dec]
---       mkSimple name =
---         let t = conT name
---         in
---         [d| instance Convert Prim $t where
---               type Underlying Prim $t = Z :. $t
---               toUnderlying _ = (Z_ ::. )
---           |]
-
---       mkTuple :: Int -> Q Dec
---       mkTuple n =
---         let
---             xs  = [ mkName ('x' : show i) | i <- [0 .. n-1] ]
---             ts  = map varT xs
---             res = tupT ts
---             ctx = mapM (appT [t| Elt |]) ts
---         in
---         instanceD ctx [t| Elt $res |] []
-
---       --
---       mkNewtype :: Name -> Q [Dec]
---       mkNewtype name = do
---         r    <- reify name
---         base <- case r of
---                   TyConI (NewtypeD _ _ _ _ (NormalC _ [(_, ConT b)]) _) -> return b
---                   _                                                     -> error "unexpected case generating newtype Elt instance"
---         --
---         [d| instance Elt $(conT name) where
---               type EltR $(conT name) = $(conT base)
---               eltR = TupRsingle scalarType
---               tagsR = [TagRsingle scalarType]
---               fromElt $(conP (mkName (nameBase name)) [varP (mkName "x")]) = x
---               toElt = $(conE (mkName (nameBase name)))
---           |]
---   --
---   ss <- mapM mkSimple (integralTypes ++ floatingTypes)
---   ns <- mapM mkNewtype newtypes
---   ts <- mapM mkTuple [2..16]
-
---   return (concat ss ++ concat ns ++ ts)
+  toUnderlying _ x = Z_ ::. x
+  toSurface    _ (Z_ ::. x) = x
